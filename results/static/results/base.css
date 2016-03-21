@@ -1,0 +1,112 @@
+* {
+    font-family: Tahoma, Verdana, Helvetica, sans-serif;
+}
+
+body {
+    width: 989px;
+    margin: 0 auto 0 auto;
+}
+
+body #top-header {
+    background-color: #76808d;
+    overflow: hidden;
+    border-bottom: 1px solid white;
+}
+
+body #top-header img {
+    display: block;
+}
+
+body #banner img {
+    display: block;
+}
+
+body div.menu {
+    background-color: #8c96a3;
+}
+
+body div.menu ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+body div.menu ul li {
+    display: inline-block;
+    padding: 4px 8px 4px 4px;
+    vertical-align: middle;
+    border-right: 1px dotted white;
+}
+
+body #menu-top {
+    margin-bottom: 16px;
+}
+
+body #menu-bottom {
+    margin-top: 16px;
+}
+
+body div.menu ul li a {
+    text-decoration: none;
+    color: white;
+    font-family: Tahoma, Verdana, Helvetica, sans-serif;
+    font-size:11px;
+    font-weight: bold;
+}
+
+body div.menu ul li a:hover {
+    color: darkred;
+}
+
+body #path {
+    margin: 0 0 16px 0;
+    padding: 0;
+}
+
+body #path div {
+    display: inline-block;
+    color: white;
+    font-family: Tahoma, Verdana, Helvetica, sans-serif;
+    font-weight: bold;
+    padding: 8px 12px 8px 12px;
+    margin: 0;
+}
+
+body #foot {
+    font-family: Tahoma, Verdana, Helvetica, sans-serif;
+    font-size: 12px;
+    margin: 12px 4px 12px 4px;
+}
+
+body #foot a {
+    color: black;
+    text-decoration: none;
+}
+
+body #foot a:hover {
+    text-decoration: underline;
+}
+
+body #contents {
+    margin: 0 8px;
+    overflow: hidden;
+}
+
+body #contents div.window {
+    border: 1px solid darkgray;
+    background-color: lightgray;
+    border-radius: 8px 8px 0 0 / 8px 8px 0 0;
+    overflow: hidden;
+    margin: 8px;
+}
+
+body #contents div.window div.title {
+    color: #404040;
+    font-family: Tahoma, Verdana, Helvetica, sans-serif;
+    font-size: 12px;
+    margin: 6px 16px 4px 16px;
+}
+
+body #contents div.window div.contents {
+    background-color: #dddddd;
+}

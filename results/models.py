@@ -26,6 +26,7 @@ class Province(models.Model):
         verbose_name_plural = "Województwa"
 
     name = models.CharField('Nazwa', max_length=256)
+    map_id = models.CharField('Identyfikator na mapie', max_length=8, null=True, blank=True)
 
     def residents_no(self):
         return sum([m.residents_no if m.residents_no else 0 for m in self.municipalities.all()])
@@ -42,6 +43,16 @@ class Province(models.Model):
     def municipalities_no(self):
         return self.municipalities.count()
     municipalities_no.short_description = '# gmin'
+
+    def votes_of_candidates(self):
+        result = dict()
+        for m in self.municipalities.all():
+            for r in m.results.all():
+                if r.candidate.id in result:
+                    result[r.candidate.id] += r.votes
+                else:
+                    result[r.candidate.id] = r.votes
+        return result
 
     def __str__(self):
         return self.name

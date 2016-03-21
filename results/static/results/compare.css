@@ -1,0 +1,214 @@
+body #contents #map-window {
+    width: 580px;
+    float: left;
+}
+
+body #contents #see-also-window {
+    width: 350px;
+    float: right;
+}
+
+body #contents #candidates-summary-window {
+    width: 350px;
+    float: right;
+}
+
+body #contents #province-window {
+    width: 955px;
+    float: left;
+    clear: both;
+}
+
+body #contents #municipality-window {
+    width: 955px;
+    float: left;
+    clear: both;
+}
+
+body #contents #map-window #map-header {
+    background-color: white;
+
+    border: 1px solid darkgray;
+    border-left: 0;
+    border-right: 0;
+
+    font-family: Tahoma, Verdana, Helvetica, sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+
+    padding: 6px 8px 4px;
+}
+
+body #contents #map-window #map-desc {
+    float: right;
+    width: 220px;
+    display: block;
+    background-color: lightgray;
+    border-bottom: 1px solid darkgray;
+    border-left: 1px solid darkgray;
+}
+
+body #contents #map-window #map-desc table {
+    width: auto;
+    display: block;
+}
+
+body #contents #map-window #map-desc table tr td {
+    padding: 4px 8px 4px 4px;
+    border-bottom: 1px dotted white;
+    font-size: 14px;
+}
+
+body #contents #map-window #map-desc table tr td:nth-child(2) {
+    text-align: right;
+}
+
+body #contents #map-window #map-desc table tr:last-child td {
+    border-bottom: 0;
+}
+
+body #contents #map-image {
+    float: left;
+    overflow: hidden;
+    width: 350px;
+}
+
+body #contents #map-image svg {
+    display: block;
+    margin: 24px auto 24px auto;
+}
+
+body #contents #map-color-scale {
+    clear: both;
+    display: table;
+    width: auto;
+    border-top: 1px solid darkgray;
+    table-layout: fixed;
+}
+
+body #contents #map-color-scale > div {
+    display: table-cell;
+    width: 2%;
+}
+
+body #contents #map-color-scale > div > div {
+    width: 100%;
+    display: block;
+    float: left;
+    clear: both;
+}
+
+body #contents #map-color-scale div div.joined {
+    height: 32px;
+    padding: 0;
+    margin: 0;
+}
+
+body #contents #map-color-scale div div.separate {
+    height: 16px;
+    padding: 0;
+    margin: 0;
+}
+
+body #contents #map-color-scale div div.desc {
+    background-color: white;
+    padding: 2px 0 1px 0;
+    font-size: 12px;
+    text-align: center;
+}
+
+
+#map-image svg g svg {
+    width: 612;
+    height: 577;
+}
+
+#map-image svg g svg g path {
+    fill: lightgray;
+    pointer-events: all;
+}
+
+body #contents #province-window table {
+    border-collapse: collapse;
+}
+
+body #contents #province-window table .lp_col {
+    width: 40px;
+}
+
+body #contents #province-window table .name_col {
+    width: 200px;
+}
+
+body #contents #province-window table .sum_col {
+    width: 120px;
+}
+
+body #contents #province-window table .no_col {
+    width: 110px;
+}
+
+body #contents #province-window table .prop_col {
+    width: 60px;
+}
+
+body #contents #province-window table .vis_col {
+    width: 250px;
+}
+
+body #contents #province-window table thead th {
+    border: 1px dotted dimgray;
+    padding: 4px 0;
+}
+
+body #contents #province-window table tbody td {
+    padding: 4px 4px;
+    vertical-align: middle;
+}
+
+body #contents #province-window table tfoot td {
+    border-top: 1px dotted dimgray;
+    color: red;
+    font-weight: bold;
+    padding: 4px 4px;
+    vertical-align: middle;
+}
+
+
+body #contents #municipality-window table {
+    border-collapse: collapse;
+}
+
+body #contents #municipality-window table .lp_col {
+    width: 40px;
+}
+
+body #contents #municipality-window table .name_col {
+    width: 200px;
+}
+
+body #contents #municipality-window table .sum_col {
+    width: 120px;
+}
+
+body #contents #municipality-window table .no_col {
+    width: 110px;
+}
+
+body #contents #municipality-window table .prop_col {
+    width: 60px;
+}
+
+body #contents #municipality-window table .vis_col {
+    width: 250px;
+}
+
+body #contents #municipality-window table thead th {
+    border: 1px dotted dimgray;
+    padding: 4px 0;
+}
+
+body #contents #municipality-window table tbody td {
+    padding: 4px 4px;
+    vertical-align: middle;
+}

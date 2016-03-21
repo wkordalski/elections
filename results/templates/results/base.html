@@ -1,0 +1,39 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Wybory 2016{% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="{% static "results/base.css" %}" />
+    {% block meta %}{% endblock %}
+</head>
+<body>
+    {% comment %}{% endcomment %}
+    <div id="top-header">
+        <img src="{% static "results/top_pl.png" %}" style="margin: 0; padding: 0; float:left" />
+        <img src="{% static "results/flags.png" %}" style="margin-right: 4px; margin-top: 12px; margin-bottom: 0; vertical-align: top; float: right" />
+    </div>
+    <div id="banner">
+        <img src="{% static "results/main_pl.jpg" %}" />
+    </div>
+    <div class="menu" id="menu-top">
+        {% include "results/menu.html" %}
+    </div>
+    <div id="path">
+        {% block path %}{% endblock %}
+    </div>
+    <div id="contents">
+        {% block contents %}
+        {% endblock %}
+    </div>
+    <div class="menu" id="menu-bottom">
+        {% include "results/menu.html" %}
+    </div>
+    <div id="foot">
+        Copyright [c] 2016
+        <a href="http://students.mimuw.edu.pl/~wk359805/" target="_balnk" style="font-weight: bold">Wojciech Kordalski</a>.
+        Wszystkie Prawa Zastrzeżone.
+    </div>
+</body>
+</html>

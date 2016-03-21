@@ -1,0 +1,75 @@
+{% load humanize %}
+
+<div class="window" id="map-window">
+    <div class="title">Statystyki globalne</div>
+    <div class="contents">
+        <div id="map-header" style="">Polska...</div>
+        <!-- mapa Polski -->
+        <div id="map-image">
+            <style type="text/css">
+                #map-image svg g svg g path {
+                    fill: {{ map_window.color_unknown }};
+                }
+                {% for pid, color in map_window.map_colors.items %}
+                    #map-image #{{ pid }} {
+                        fill: {{ color }};
+                    }
+                {% endfor %}
+            </style>
+            <svg width="306px" height="289px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <g transform="scale(0.5)">
+                    {% include "results/poland.svg" %}
+                </g>
+            </svg>
+        </div>
+        <div id="map-desc" style="">
+            <div style="font-size: 20px; background-color: white; width: auto; display: block; text-align: center; padding: 16px;">Polska</div>
+            <table>
+                <tr>
+                    <td># mieszkańców:</td>
+                    <td>{{ map_window.residents_no|intcomma }}</td>
+                </tr>
+                <tr>
+                    <td># uprawnionych:</td>
+                    <td>{{ map_window.entitled_no|intcomma }}</td>
+                </tr>
+                <tr>
+                    <td># wydanych kart:</td>
+                    <td>{{ map_window.cards_no|intcomma }}</td>
+                </tr>
+                <tr>
+                    <td># oddanych głosów:</td>
+                    <td>{{ map_window.votes_no|intcomma }}</td>
+                </tr>
+                <tr>
+                    <td># ważnych głosów:</td>
+                    <td>{{ map_window.valid_votes_no|intcomma }}</td>
+                </tr>
+            </table>
+        </div>
+        <div id="map-color-scale">
+            <div>
+                <div class="desc">brak</div>
+                <div class="joined" style="background-color: {{ map_window.color_unknown }};"></div>
+                <div class="desc">danych</div>
+            </div>
+            <div>
+                <div class="desc">50%</div>
+                <div class="joined" style="background-color: {{ map_window.color_indecisive }};"></div>
+                <div class="desc">50%</div>
+            </div>
+            {% for color in map_window.color_scale %}
+            <div>
+                <div class="desc">
+                    {% if color.0 == 50 %}&gt;{% else %}&ge;{% endif %} {{ color.0 }}%
+                </div>
+                <div class="separate" style="background-color: {{ color.1.0 }};"></div>
+                <div class="separate" style="background-color: {{ color.1.1 }};"></div>
+                <div class="desc">
+                    {% if color.0 == 50 %}&gt;{% else %}&ge;{% endif %} {{ color.0 }}%
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

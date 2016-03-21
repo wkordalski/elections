@@ -1,0 +1,20 @@
+{% extends "results/base.html" %}
+
+{% load humanize %}
+{% load staticfiles %}
+
+{% block meta %}
+    <link rel="stylesheet" type="text/css" href="{% static "results/compare.css" %}" />
+{% endblock %}
+
+{% block path %}
+    <div style="background-color: darkred">Wyniki głosowania</div>
+{% endblock %}
+
+{% block contents %}
+    {% include "results/map_window.html" %}
+    {% include "results/see_also.html" %}
+    {% include "results/candidates_summary.html" %}
+    {% include "results/province_summary.html" %}
+    {% include "results/municipality_summary.html" %}
+{% endblock %}
