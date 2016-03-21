@@ -1,3 +1,5 @@
+{% load humanize %}
+
 <div class="window" id="municipality-window">
     <div class="title">Porównanie wyników głosowania na kandydatów w zależności od siedziby komisji obwodowej</div>
     <div class="contents" style="padding: 0;">
@@ -32,15 +34,15 @@
                     <tr>
                         <td></td>
                         <td style="text-align: left;">{{ p.0 }}</td>
-                        <td style="text-align: right;">{{ p.1 }}</td>
-                        <td style="text-align: right;">{{ p.2 }}</td>
+                        <td style="text-align: right;">{{ p.1|intcomma }}</td>
+                        <td style="text-align: right;">{{ p.2|intcomma }}</td>
                         <td style="text-align: right;">{{ p.3|floatformat:2 }}</td>
                         <td style="width: auto; padding: 1px 2px 2px 2px;">
-                            <div style="width: {{ p.3 }}%; height: 10px; background-color: {{ province_window.colors.0 }}; display: inline-block; float: left;"></div>
-                            <div style="width: {{ p.5 }}%; height: 10px; background-color: {{ province_window.colors.1 }}; display: inline-block; float: left;"></div>
+                            <div style="width: {{ p.3|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.0 }}; display: inline-block; float: left;"></div>
+                            <div style="width: {{ p.5|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.1 }}; display: inline-block; float: left;"></div>
                         </td>
                         <td style="text-align: right;">{{ p.5|floatformat:2 }}</td>
-                        <td style="text-align: right;">{{ p.4 }}</td>
+                        <td style="text-align: right;">{{ p.4|intcomma }}</td>
                     </tr>
                 {% endfor %}
                 <tr style="border-top: 1px dotted darkgray; border-bottom: 1px dotted darkgray; background-color: lightgray;">
@@ -53,15 +55,15 @@
                     <tr>
                         <td></td>
                         <td style="text-align: left;">{{ p.0 }}</td>
-                        <td style="text-align: right;">{{ p.1 }}</td>
-                        <td style="text-align: right;">{{ p.2 }}</td>
+                        <td style="text-align: right;">{{ p.1|intcomma }}</td>
+                        <td style="text-align: right;">{{ p.2|intcomma }}</td>
                         <td style="text-align: right;">{{ p.3|floatformat:2 }}</td>
                         <td style="width: auto; padding: 1px 2px 2px 2px;">
-                            <div style="width: {{ p.3 }}%; height: 10px; background-color: {{ province_window.colors.0 }}; display: inline-block; float: left;"></div>
-                            <div style="width: {{ p.5 }}%; height: 10px; background-color: {{ province_window.colors.1 }}; display: inline-block; float: left;"></div>
+                            <div style="width: {{ p.3|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.0 }}; display: inline-block; float: left;"></div>
+                            <div style="width: {{ p.5|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.1 }}; display: inline-block; float: left;"></div>
                         </td>
                         <td style="text-align: right;">{{ p.5|floatformat:2 }}</td>
-                        <td style="text-align: right;">{{ p.4 }}</td>
+                        <td style="text-align: right;">{{ p.4|intcomma }}</td>
                     </tr>
                 {% endfor %}
 

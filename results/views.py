@@ -1,4 +1,4 @@
-
+from django.contrib.humanize.templatetags.humanize import intcomma
 from django.core.exceptions import SuspiciousOperation
 from django.db.models.aggregates import Sum
 from django.db.models.functions import Coalesce
@@ -61,6 +61,8 @@ def color_conf(statistics, min_value=50, max_value=100, full_value=100):
         @staticmethod
         def scaled_color(candidate_id, value, full):
             if candidate_colors[candidate_id] == -1:
+                return color_unknown
+            elif value*full_value < min_value*full or (value == 0 and full == 0 and min_value > 0):
                 return color_unknown
             elif value*full_value == min_value*full:
                 return color_indecisive
@@ -150,6 +152,7 @@ def province_window(request, statistics):
          (p['results'][rgt]*100/p['voting']['sum']) if p['voting']['sum'] > 0 else 0,)
         for pid, p in statistics['provinces'].items()
     ]
+    ctx['provinces'].sort(key=lambda x: x[0])
 
     ctx['poland'] = (
         statistics['poland']['voting']['sum'],
@@ -185,7 +188,7 @@ def municipality_window(request, statistics):
 
     ctx['municipality_sizes'] = [
         (
-            (('od %d ' % (ms[0]+1)) if ms[0] > 0 else '') + ('do %d' % (ms[1])),
+            (('od {} '.format(intcomma(ms[0]+1))) if ms[0] > 0 else '') + ('do {}'.format(intcomma(ms[1]))),
             ms[2]['voting']['sum'],
             ms[2]['results'][lft],
             (ms[2]['results'][lft] * 100 / ms[2]['voting']['sum']) if ms[2]['voting']['sum'] > 0 else 0,
@@ -207,7 +210,7 @@ def municipality_window(request, statistics):
     big_mun = statistics['municipality_biggest_size']
     ctx['municipality_sizes'].append(
         (
-            ('pow %d' % big_mun[0]),
+            ('pow. {}'.format(intcomma(big_mun[0]))),
             big_mun[1]['voting']['sum'],
             big_mun[1]['results'][lft],
             (big_mun[1]['results'][lft] * 100 / big_mun[1]['voting']['sum']) if big_mun[1]['voting']['sum'] > 0 else 0,
@@ -282,8 +285,6 @@ def index(request):
                           poland_result_filter & Q(municipality__residents_no__gt=municipality_sizes[-1])
                          )
     )
-
-    print(stats['municipality_type'])
 
     ctx['map_window'] = map_window(request, stats)
     ctx['summary_window'] = summary_window(request, stats)
