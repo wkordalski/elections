@@ -1,0 +1,60 @@
+body {
+    width: 989px;
+    margin: 0 auto 0 auto;
+}
+
+header div#top-header {
+    overflow: hidden;
+}
+
+nav.menu ul {
+    margin: 0;
+    padding: 0;
+}
+
+nav.menu ul li {
+    padding: 4px 8px 4px 4px;
+}
+
+nav.menu ul li a {
+    font-size:11px;
+}
+
+nav#menu-top {
+    margin-bottom: 16px;
+}
+
+nav#menu-bottom {
+    margin-top: 16px;
+}
+
+
+body #path {
+    margin: 0 0 16px 0;
+    padding: 0;
+}
+
+body #path div {
+    padding: 8px 12px 8px 12px;
+    margin: 0;
+}
+
+footer#foot {
+    font-size: 12px;
+    margin: 12px 4px 60px 4px;
+}
+
+body #contents {
+    margin: 0 8px;
+    overflow: hidden;
+}
+
+body #contents div.window {
+    overflow: hidden;
+    margin: 8px;
+}
+
+body #contents div.window div.title {
+    font-size: 12px;
+    margin: 6px 16px 4px 16px;
+}

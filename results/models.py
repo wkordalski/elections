@@ -1,5 +1,6 @@
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.db import models
+from django.db.models.aggregates import Count
 from djchoices import DjangoChoices, ChoiceItem
 
 
@@ -8,6 +9,14 @@ class Candidate(models.Model):
         verbose_name = "Kandydat"
         verbose_name_plural = "Kandydaci"
         ordering = ['surname']
+
+    def validate_unique(self, exclude=None):
+        super(Candidate, self).validate_unique(exclude)
+
+        if self._state.adding and self.pk is None and self.__class__._default_manager.count() >= 2:
+            raise ValidationError({
+                NON_FIELD_ERRORS: ['W bazie danych są już dwaj kandydaci.'],
+            })
 
     def __str__(self):
         return self.surname + ' ' + self.name
@@ -62,6 +71,7 @@ class Municipality(models.Model):
     class Meta:
         verbose_name = 'Gmina'
         verbose_name_plural = "Gminy"
+        unique_together = ('province', 'name')
 
     class Type(DjangoChoices):
         City = ChoiceItem('C', label="Miasto")
@@ -112,7 +122,7 @@ class Municipality(models.Model):
 
     name = models.CharField('Nazwa', max_length=256)
     type = models.CharField('Typ', max_length=1, choices=Type.choices, validators=[Type.validator])
-    province = models.ForeignKey(Province, on_delete=models.CASCADE, related_name='municipalities', verbose_name='Województwo')
+    province = models.ForeignKey(Province, on_delete=models.CASCADE, related_name='municipalities', verbose_name='Województwo', null=True, blank=True)
 
     residents_no = models.PositiveIntegerField('# mieszkańców', null=True, blank=True)
     entitled_no = models.PositiveIntegerField('# uprawnionych', null=True, blank=True)

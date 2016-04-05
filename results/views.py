@@ -133,6 +133,10 @@ def summary_window(request, statistics):
 
     return ctx
 
+def see_also_window(request, statistics):
+    ctx = dict()
+    ctx['candidates'] = statistics['candidates']
+    return ctx
 
 def province_window(request, statistics):
     ctx = dict()
@@ -290,5 +294,6 @@ def index(request):
     ctx['summary_window'] = summary_window(request, stats)
     ctx['province_window'] = province_window(request, stats)
     ctx['municipality_window'] = municipality_window(request, stats)
+    ctx['see_also_window'] = see_also_window(request, stats)
 
     return render(request, 'results/compare.html', ctx)
