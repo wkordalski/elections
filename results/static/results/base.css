@@ -26,18 +26,21 @@ nav.menu {
 
 nav.menu ul {
     list-style-type: none;
+    overflow: hidden;
 }
 
 nav.menu ul li {
     display: inline-block;
+    float: left;
     vertical-align: middle;
     border-right: 1px dotted white;
+    color: white;
+    font-weight: bold;
 }
 
 nav.menu ul li a {
     text-decoration: none;
     color: white;
-    font-weight: bold;
 }
 
 nav.menu ul li a:hover {
@@ -74,4 +77,14 @@ body #contents div.window div.title {
 
 body #contents div.window div.contents {
     background-color: #dddddd;
+}
+
+body div.modal-wnd-background {
+    display: none;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(77, 77, 77, 0.5);
 }

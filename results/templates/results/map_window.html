@@ -10,11 +10,6 @@
                 #map-image svg g svg g path {
                     fill: {{ map_window.color_unknown }};
                 }
-                {% for pid, color in map_window.map_colors.items %}
-                    #map-image #{{ pid }} {
-                        fill: {{ color }};
-                    }
-                {% endfor %}
             </style>
             <svg width="306px" height="289px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
                 <g transform="scale(0.5)">
@@ -27,23 +22,23 @@
             <table>
                 <tr>
                     <td># mieszkańców:</td>
-                    <td>{{ map_window.residents_no|intcomma }}</td>
+                    <td></td>
                 </tr>
                 <tr>
                     <td># uprawnionych:</td>
-                    <td>{{ map_window.entitled_no|intcomma }}</td>
+                    <td></td>
                 </tr>
                 <tr>
                     <td># wydanych kart:</td>
-                    <td>{{ map_window.cards_no|intcomma }}</td>
+                    <td></td>
                 </tr>
                 <tr>
                     <td># oddanych głosów:</td>
-                    <td>{{ map_window.votes_no|intcomma }}</td>
+                    <td></td>
                 </tr>
                 <tr>
                     <td># ważnych głosów:</td>
-                    <td>{{ map_window.valid_votes_no|intcomma }}</td>
+                    <td></td>
                 </tr>
             </table>
         </div>

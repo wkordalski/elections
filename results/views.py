@@ -3,9 +3,10 @@ from django.core.exceptions import SuspiciousOperation
 from django.db.models.aggregates import Sum
 from django.db.models.functions import Coalesce
 from django.db.models.query_utils import Q
+from django.http.response import JsonResponse
 from django.shortcuts import render
 
-from results.models import Municipality, Province, Candidate
+from results.models import Municipality, Province, Candidate, ElectionResult
 
 
 class VotingStatistics:
@@ -99,21 +100,7 @@ def color_conf(statistics, min_value=50, max_value=100, full_value=100):
 
 def map_window(request, statistics):
     ctx = dict()
-    ctx['residents_no'] = statistics['poland']['voting']['residents']
-    ctx['entitled_no'] = statistics['poland']['voting']['entitled']
-    ctx['cards_no'] = statistics['poland']['voting']['cards']
-    ctx['votes_no'] = statistics['poland']['voting']['votes']
-    ctx['valid_votes_no'] = statistics['poland']['voting']['valid_votes']
-
     ctx['map_colors'] = dict()
-
-    def assign_color_to_province(province):
-        max_item = max(province['results'].items(), key=lambda x: x[1] if x[1] else -1)
-        return statistics['colorizer'].scaled_color(max_item[0], max_item[1], province['voting']['sum'])
-
-    for id, province in statistics['provinces'].items():
-        if province['object'].map_id:
-            ctx['map_colors'][province['object'].map_id] = assign_color_to_province(province)
 
     ctx['color_scale'] = statistics['colorizer'].get_scale()
     ctx['color_unknown'] = statistics['colorizer'].get_unknown_color()
@@ -121,122 +108,15 @@ def map_window(request, statistics):
     return ctx
 
 
-def summary_window(request, statistics):
-    ctx = dict()
-    ctx['candidates'] = [
-        (statistics['candidates'][i],
-         statistics['colorizer'].color(statistics['candidates'][i].id),
-         statistics['global']['results'][statistics['candidates'][i].id],
-         (statistics['global']['results'][statistics['candidates'][i].id]*100/statistics['global']['voting']['sum']) if statistics['global']['voting']['sum'] > 0 else 0,)
-        for i in range(len(statistics['candidates']))
-    ]
-
-    return ctx
-
-def see_also_window(request, statistics):
-    ctx = dict()
-    ctx['candidates'] = statistics['candidates']
-    return ctx
-
-def province_window(request, statistics):
-    ctx = dict()
-
-    colorizer = statistics['colorizer']
-
-    ctx['candidates'] = statistics['candidates']
-    lft = statistics['candidates'][0].id
-    rgt = statistics['candidates'][1].id
-    ctx['colors'] = [colorizer.color(lft), colorizer.color(rgt)]
-    ctx['provinces'] = [
-        (p['object'].name,
-         p['voting']['sum'],
-         p['results'][lft],
-         (p['results'][lft]*100/p['voting']['sum']) if p['voting']['sum'] > 0 else 0,
-         p['results'][rgt],
-         (p['results'][rgt]*100/p['voting']['sum']) if p['voting']['sum'] > 0 else 0,)
-        for pid, p in statistics['provinces'].items()
-    ]
-    ctx['provinces'].sort(key=lambda x: x[0])
-
-    ctx['poland'] = (
-        statistics['poland']['voting']['sum'],
-        statistics['poland']['results'][lft],
-        (statistics['poland']['results'][lft]*100/statistics['poland']['voting']['sum']) if statistics['poland']['voting']['sum'] > 0 else 0,
-        statistics['poland']['results'][rgt],
-        (statistics['poland']['results'][rgt]*100/statistics['poland']['voting']['sum']) if statistics['poland']['voting']['sum'] > 0 else 0,
-    )
-
-    return ctx
-
-
-def municipality_window(request, statistics):
-    ctx = dict()
-
-    colorizer = statistics['colorizer']
-
-    ctx['candidates'] = statistics['candidates']
-    lft = statistics['candidates'][0].id
-    rgt = statistics['candidates'][1].id
-    ctx['colors'] = [colorizer.color(lft), colorizer.color(rgt)]
-    type_stats = statistics['municipality_type']
-    ctx['municipality_types'] = [
-        (Municipality.Type.values[t],
-         type_stats[t]['voting']['sum'],
-         type_stats[t]['results'][lft],
-         (type_stats[t]['results'][lft] * 100 / type_stats[t]['voting']['sum']) if type_stats[t]['voting']['sum'] > 0 else 0,
-         type_stats[t]['results'][rgt],
-         (type_stats[t]['results'][rgt] * 100 / type_stats[t]['voting']['sum']) if type_stats[t]['voting']['sum'] > 0 else 0,
-         )
-        for t in list(['C', 'V', 'S', 'A'])
-    ]
-
-    ctx['municipality_sizes'] = [
-        (
-            (('od {} '.format(intcomma(ms[0]+1))) if ms[0] > 0 else '') + ('do {}'.format(intcomma(ms[1]))),
-            ms[2]['voting']['sum'],
-            ms[2]['results'][lft],
-            (ms[2]['results'][lft] * 100 / ms[2]['voting']['sum']) if ms[2]['voting']['sum'] > 0 else 0,
-            ms[2]['results'][rgt],
-            (ms[2]['results'][rgt] * 100 / ms[2]['voting']['sum']) if ms[2]['voting']['sum'] > 0 else 0,
-        )
-        for ms in statistics['municipality_size']
-    ]
-    ctx['municipality_sizes'].insert(0,
-        (
-            'Statki i zagranica',
-            type_stats['S']['voting']['sum'] + type_stats['A']['voting']['sum'],
-            type_stats['S']['results'][lft] + type_stats['A']['results'][lft],
-            ((type_stats['S']['results'][lft] + type_stats['A']['results'][lft]) * 100 / (type_stats['S']['voting']['sum'] + type_stats['A']['voting']['sum'])) if (type_stats['S']['voting']['sum'] + type_stats['A']['voting']['sum']) > 0 else 0,
-            type_stats['S']['results'][rgt] + type_stats['A']['results'][rgt],
-            ((type_stats['S']['results'][rgt] + type_stats['A']['results'][rgt]) * 100 / (type_stats['S']['voting']['sum'] + type_stats['A']['voting']['sum'])) if (type_stats['S']['voting']['sum'] + type_stats['A']['voting']['sum']) > 0 else 0,
-        )
-    )
-    big_mun = statistics['municipality_biggest_size']
-    ctx['municipality_sizes'].append(
-        (
-            ('pow. {}'.format(intcomma(big_mun[0]))),
-            big_mun[1]['voting']['sum'],
-            big_mun[1]['results'][lft],
-            (big_mun[1]['results'][lft] * 100 / big_mun[1]['voting']['sum']) if big_mun[1]['voting']['sum'] > 0 else 0,
-            big_mun[1]['results'][rgt],
-            (big_mun[1]['results'][rgt] * 100 / big_mun[1]['voting']['sum']) if big_mun[1]['voting']['sum'] > 0 else 0,
-        )
-    )
-
-    return ctx
-
-
 def index(request):
     stats = dict()
     ctx = dict()
-
-    def ntz(v):
-        return 0 if v is None else v
 
     candidates = list(Candidate.objects.all())
     stats['candidates'] = candidates
 
     if len(candidates) != 2:
+        print("CANDS")
         raise SuspiciousOperation(
             'Website admins are not good enough to provide valid voting results - there is third candidate.'
         )
@@ -244,8 +124,282 @@ def index(request):
     colorizer = color_conf(stats)
     stats['colorizer'] = colorizer
 
-    candidate_votes = {c.id: c.results.aggregate(Sum('votes')) for c in Candidate.objects.all()}
-    stats['candidate_votes'] = candidate_votes
+    ctx['candidates'] = candidates
+
+    ctx['map_window'] = map_window(request, stats)
+    ctx['candidates'] = stats['candidates']
+
+    return render(request, 'results/compare.html', ctx)
+
+
+def provinces(request):
+    ctx = dict()
+    stats = dict()
+
+    candidates = list(Candidate.objects.all())
+    stats['candidates'] = candidates
+
+    lft = candidates[0].id
+    rgt = candidates[1].id
+
+    if len(candidates) != 2:
+        raise SuspiciousOperation(
+            'Website admins are not good enough to provide valid voting results - there is third candidate.'
+        )
+
+    colorizer = color_conf(stats)
+
+    ctx['color'] = {'a': colorizer.color(lft), 'b': colorizer.color(rgt)}
+
+    ctx['rows'] = [
+        {'name': p.name,
+         'votes_a': candidates[0].results.filter(Q(municipality__province__id=p.id)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum'],
+         'votes_b': candidates[1].results.filter(Q(municipality__province__id=p.id)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum'],
+         'result_unit': {'type': 'province', 'id': p.id}
+        }
+        for p in Province.objects.all()
+    ]
+    ctx['rows'].sort(key=lambda x: x['name'])
+
+    return JsonResponse(ctx)
+
+def types(request):
+    ctx = dict()
+    stats = dict()
+
+    candidates = list(Candidate.objects.all())
+    stats['candidates'] = candidates
+
+    lft = candidates[0].id
+    rgt = candidates[1].id
+
+    if len(candidates) != 2:
+        raise SuspiciousOperation(
+            'Website admins are not good enough to provide valid voting results - there is third candidate.'
+        )
+
+    colorizer = color_conf(stats)
+
+    ctx['color'] = {'a': colorizer.color(lft), 'b': colorizer.color(rgt)}
+
+    possible_types = [
+        Municipality.Type.City,
+        Municipality.Type.Village,
+        Municipality.Type.Ship,
+        Municipality.Type.Abroad
+    ]
+
+    ctx['rows'] = [
+        {'name': Municipality.Type.values[t],
+         'votes_a': candidates[0].results.filter(Q(municipality__type=t)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum'],
+         'votes_b': candidates[1].results.filter(Q(municipality__type=t)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum'],
+         'result_unit': {'type': 'type', 'id': t}
+        }
+        for t in possible_types
+    ]
+
+    return JsonResponse(ctx)
+
+def sizes(request):
+    ctx = dict()
+    stats = dict()
+
+    candidates = list(Candidate.objects.all())
+    stats['candidates'] = candidates
+
+    lft = candidates[0].id
+    rgt = candidates[1].id
+
+    if len(candidates) != 2:
+        raise SuspiciousOperation(
+            'Website admins are not good enough to provide valid voting results - there is third candidate.'
+        )
+
+    colorizer = color_conf(stats)
+
+    ctx['color'] = {'a': colorizer.color(lft), 'b': colorizer.color(rgt)}
+
+    possible_sizes = [
+        (None, 5000),
+        (5001, 10000),
+        (10001, 20000),
+        (20001, 50000),
+        (50001, 100000),
+        (100001, 200000),
+        (200001, 500000),
+        (500001, None)
+    ]
+
+    def make_query(r):
+        a, b = r
+        if a:
+            ar = Q(municipality__residents_no__gt=a-1)
+        if b:
+            br = Q(municipality__residents_no__lt=b+1)
+
+        if a and b:
+            return ar & br
+        elif a:
+            return ar
+        elif b:
+            return br
+        else:
+            return Q()
+
+    def make_name(r):
+        return (
+            (('od {} '.format(intcomma(r[0]))) if r[0] else '') + ('do {}'.format(intcomma(r[1])) if r[1] else '')
+        ).strip()
+
+
+    ctx['rows'] = [
+        {'name': make_name(r),
+         'votes_a': candidates[0].results.filter(make_query(r)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum'],
+         'votes_b': candidates[1].results.filter(make_query(r)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum'],
+         'result_unit': {'type': 'size', 'from': r[0], 'to': r[1]}
+        }
+        for r in possible_sizes
+    ]
+
+    return JsonResponse(ctx)
+
+
+def query_helper(q):
+    ctx = dict()
+    stats = dict()
+
+    candidates = list(Candidate.objects.all())
+    stats['candidates'] = candidates
+
+    lft = candidates[0].id
+    rgt = candidates[1].id
+
+    if len(candidates) != 2:
+        raise SuspiciousOperation(
+            'Website admins are not good enough to provide valid voting results - there is third candidate.'
+        )
+
+    colorizer = color_conf(stats)
+
+    ctx['color'] = {'a': colorizer.color(lft), 'b': colorizer.color(rgt)}
+
+    objects = Municipality.objects.filter(q)
+
+    def get_votes(municipality, candidate):
+        qs = municipality.results.filter(candidate=candidate.id)
+        return qs[0].votes if qs else 0
+
+    ctx['rows'] = [
+        {'name': m.name,
+         'votes_a': get_votes(m, candidates[0]),
+         'votes_b': get_votes(m, candidates[1]),
+         'result_unit': {'type': 'municipality', 'id': m.id},
+         }
+        for m in objects.all()
+    ]
+    ctx['rows'].sort(key=lambda x: x['name'])
+
+    return JsonResponse(ctx)
+
+def query(request):
+    what = request.GET
+    if what['type'] == 'province':
+        pid = what['id']
+        return query_helper(Q(province__id=pid))
+    elif what['type'] == 'type':
+        tid = what['id']
+        return query_helper(Q(type=tid))
+    elif what['type'] == 'size':
+        rng = (int(what['from']) if what['from'] else None, int(what['to']) if what['to'] else None)
+
+        def make_query(r):
+            a, b = r
+            if a:
+                ar = Q(residents_no__gt=a-1)
+            if b:
+                br = Q(residents_no__lt=b+1)
+
+            if a and b:
+                return ar & br
+            elif a:
+                return ar
+            elif b:
+                return br
+            else:
+                return Q()
+        return query_helper(make_query(rng))
+    elif what['type'] == 'municipality':
+        mid = what['id']
+        m = Municipality.objects.get(id=mid)
+        candidates = list(Candidate.objects.all())
+
+        def get_votes(municipality, candidate):
+            qs = municipality.results.filter(candidate=candidate.id)
+            return qs[0].votes if qs else 0
+
+        return JsonResponse({'name': m.name, 'residents_no': m.residents_no, 'entitled_no': m.entitled_no,
+                             'cards_no': m.cards_no, 'votes_no': m.votes_no, 'valid_votes_no': m.valid_votes_no,
+                             'votes_a': get_votes(m, candidates[0]), 'votes_b': get_votes(m, candidates[1]),
+                             'update_user': m.update_user.username if m.update_user else 'unknown',
+                             'update_time': str(m.update_time)})
+    else:
+        raise SuspiciousOperation('Wrong query')
+
+def map(request):
+    ctx = dict()
+    stats = dict()
+
+    candidates = list(Candidate.objects.all())
+    stats['candidates'] = candidates
+
+    lft = candidates[0].id
+    rgt = candidates[1].id
+
+    if len(candidates) != 2:
+        raise SuspiciousOperation(
+            'Website admins are not good enough to provide valid voting results - there is third candidate.'
+        )
+
+    colorizer = color_conf(stats)
+
+    ctx['color'] = {'a': colorizer.color(lft), 'b': colorizer.color(rgt)}
+
+    def make_color(province):
+        votes_a = candidates[0].results.filter(Q(municipality__province__id=province.id)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum']
+        votes_b = candidates[1].results.filter(Q(municipality__province__id=province.id)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum']
+        sum = votes_a + votes_b
+        max_item = max([(candidates[0].id, votes_a), (candidates[1].id, votes_b)], key=lambda x: x[1])
+        return colorizer.scaled_color(max_item[0], max_item[1], sum)
+
+    ctx['rows'] = [
+        {'id': p.map_id,
+         'color': make_color(p),
+         'result_unit': {'type': 'province', 'id': p.id}
+        }
+        for p in Province.objects.all()
+    ]
+    ctx['rows'].sort(key=lambda x: x['id'])
+
+    return JsonResponse(ctx)
+
+def global_stats(requests):
+    ctx = dict()
+    stats = dict()
+
+    candidates = list(Candidate.objects.all())
+    stats['candidates'] = candidates
+
+    lft = candidates[0].id
+    rgt = candidates[1].id
+
+    if len(candidates) != 2:
+        raise SuspiciousOperation(
+            'Website admins are not good enough to provide valid voting results - there is third candidate.'
+        )
+
+    colorizer = color_conf(stats)
+
+    ctx['color'] = {'a': colorizer.color(lft), 'b': colorizer.color(rgt)}
 
     def aggregate_votings(municipality_filter, result_filter):
         result = {'voting': Municipality.objects.filter(municipality_filter).aggregate(residents=Coalesce(Sum('residents_no'), 0),
@@ -258,12 +412,6 @@ def index(request):
         result['voting']['sum'] = sum(filter(None, result['results'].values()))
         return result
 
-    def merge_dicts(d, *args):
-        nd = d.copy()
-        for a in args:
-            nd.update(a)
-        return nd
-
     stats['global'] = aggregate_votings(Q(), Q())
 
     poland_municipality_filter = Q(type=Municipality.Type.City) | Q(type=Municipality.Type.Village)
@@ -271,29 +419,77 @@ def index(request):
 
     stats['poland'] = aggregate_votings(poland_municipality_filter, poland_result_filter)
 
-    stats['provinces'] = {p.id: merge_dicts({'object': p}, aggregate_votings(Q(province__id=p.id), Q(municipality__province__id=p.id)))
-                                for p in Province.objects.all()}
+    ctx['residents'] = stats['poland']['voting']['residents']
+    ctx['entitled'] = stats['poland']['voting']['entitled']
+    ctx['cards'] = stats['poland']['voting']['cards']
+    ctx['votes'] = stats['poland']['voting']['votes']
+    ctx['valid_votes'] = stats['poland']['voting']['valid_votes']
+    ctx['votes_a'] = stats['global']['results'][lft]
+    ctx['votes_b'] = stats['global']['results'][rgt]
+    ctx['votes_s'] = stats['global']['voting']['sum']
 
-    stats['municipality_type'] = {t: aggregate_votings(Q(type=t), Q(municipality__type=t))
-                                  for t in Municipality.Type.values}
+    return JsonResponse(ctx)
 
-    municipality_sizes = [0, 5000, 10000, 20000, 50000, 100000, 200000, 500000]
+def edit_results(request):
+    if request.user.is_anonymous():
+        raise SuspiciousOperation("Login required")
+    if request.method == "POST":
+        data = request.POST
 
-    stats['municipality_size'] = [(
-        municipality_sizes[i], municipality_sizes[i+1],
-        aggregate_votings(poland_municipality_filter & Q(residents_no__lt=municipality_sizes[i+1]+1, residents_no__gt=municipality_sizes[i]), poland_result_filter & Q(municipality__residents_no__lt=municipality_sizes[i+1]+1, municipality__residents_no__gt=municipality_sizes[i]))
-    ) for i in range(len(municipality_sizes)-1)]
-    stats['municipality_biggest_size'] = (
-        municipality_sizes[-1],
-        aggregate_votings(poland_municipality_filter & Q(residents_no__gt=municipality_sizes[-1]),
-                          poland_result_filter & Q(municipality__residents_no__gt=municipality_sizes[-1])
-                         )
-    )
+        # find municipality
+        m = Municipality.objects.get(id=data['id'])
+        if not m:
+            raise SuspiciousOperation("Municipality do not exist!")
 
-    ctx['map_window'] = map_window(request, stats)
-    ctx['summary_window'] = summary_window(request, stats)
-    ctx['province_window'] = province_window(request, stats)
-    ctx['municipality_window'] = municipality_window(request, stats)
-    ctx['see_also_window'] = see_also_window(request, stats)
+        def compare_update_times(a, b):
+            return str(a) == str(b)
 
-    return render(request, 'results/compare.html', ctx)
+        if not compare_update_times(m.update_time, data['update_time']):
+            return JsonResponse({'result': 'modified-in-the-meantime',
+                                 'update_user': m.update_user.username if m.update_user else 'unknown',
+                                 'update_time': str(m.update_time)
+                                 })
+        else:
+            def iot(x):
+                if x == '': return None
+                else: int(x)
+
+            def ism(a, b):
+                r = 0
+                if a is not None: r += a
+                if b is not None: r += b
+                return r
+
+            ar = [iot(data['residents']), iot(data['entitled']), iot(data['cards']), iot(data['votes']),
+                  iot(data['valid_votes']), ism(iot(data['votes_a']), iot(data['votes_b']))]
+            ar = list(filter(lambda x: x is not None, ar))
+
+            if not sorted(ar, reverse=True) == ar:
+                return JsonResponse({'result':'invalid-data'})
+
+            candidates = list(Candidate.objects.all())
+
+            m.residents_no = iot(data['residents'])
+            m.entitled_no = iot(data['entitled'])
+            m.cards_no = iot(data['cards'])
+            m.votes_no = iot(data['votes'])
+            m.valid_votes_no = iot(data['valid_votes'])
+
+            ra = m.results.filter(candidate__id=candidates[0].id).first()
+            rb = m.results.filter(candidate__id=candidates[1].id).first()
+
+            if not ra:
+                ra = ElectionResult(candidate=candidates[0], municipality=m, votes=0)
+            if not rb:
+                rb = ElectionResult(candidate=candidates[1], municipality=m, votes=0)
+
+            ra.votes = int(data['votes_a']) if data['votes_a'] else 0
+            rb.votes = int(data['votes_b']) if data['votes_b'] else 0
+            m.update_user = request.user
+
+            m.save()
+            ra.save()
+            rb.save()
+            return JsonResponse({'result': 'ok'})
+    else:
+        raise SuspiciousOperation("Should post!")

@@ -5,6 +5,407 @@
 
 {% block meta %}
     <link rel="stylesheet" type="text/css" href="{% static "results/compare.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "results/table.css" %}" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <script type="text/javascript">
+        {% if request.user.is_authenticated %}
+            authenticated = true;
+        {% else %}
+            authenticated = false;
+        {% endif %}
+    </script>
+    <script type="text/javascript">
+        $(document).ready(function($){
+            // This function gets cookie with a given name
+            function getCookie(name) {
+                var cookieValue = null;
+                if (document.cookie && document.cookie != '') {
+                    var cookies = document.cookie.split(';');
+                    for (var i = 0; i < cookies.length; i++) {
+                        var cookie = jQuery.trim(cookies[i]);
+                        // Does this cookie string begin with the name we want?
+                        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            var csrftoken = getCookie('csrftoken');
+
+            function csrfSafeMethod(method) {
+                return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+            }
+            function sameOrigin(url) {
+                var host = document.location.host;
+                var protocol = document.location.protocol;
+                var sr_origin = '//' + host;
+                var origin = protocol + sr_origin;
+                return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+                    (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+                    !(/^(\/\/|http:|https:).*/.test(url));
+            }
+
+            $.ajaxSetup({
+                beforeSend: function(xhr, settings) {
+                    if (!csrfSafeMethod(settings.type) && sameOrigin(settings.url)) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            });
+
+
+            var current_result_unit = null;
+            var current_result_unit_2 = null;
+            var municipality_edit_time = null;
+            var municipality_edit_user = null;
+            {
+                var windowb = $("#wnd-browse-municipalities");
+                var wtableb = windowb.find('div.contents table');
+                windowb.find("div.header div.close").click(function () {
+                    windowb.hide();
+                    $("#wnd-browse-municipalities-background").hide();
+                    current_result_unit = null;
+                    wtableb.find('tbody').empty();
+                    wtableb.find('tfoot').empty();
+                });
+            }
+
+            {
+                var windowe = $("#wnd-municipality-edit");
+                var wtablee = windowe.find('div.contents table');
+                windowe.find("div.contents input.close-button").click(function () {
+                    windowe.hide();
+                    $("#wnd-municipality-edit-background").hide();
+                    current_result_unit_2 = null;
+                    municipality_edit_time = null;
+                    municipality_edit_user = null;
+                });
+            }
+
+            function refresh_result_unit(complete_function) {
+                if(!current_result_unit) {
+                    complete_function();
+                    return;
+                }
+                var window = $("#wnd-browse-municipalities");
+                var wtable = window.find('div.contents table');
+                set_waiting(wtable.find('tbody'), true);
+                $.ajax('{% url 'results:query' %}', {
+                    data: current_result_unit,
+                    success: function(data) {
+                        fill_table(wtable.find('tbody'), wtable.find('tfoot'), data, true, false, true);
+                    },
+                    complete: complete_function
+                })
+            }
+            function show_results_for(result_unit) {
+                var background = $("#wnd-browse-municipalities-background");
+                var window = $("#wnd-browse-municipalities");
+                background.show();
+                current_result_unit = result_unit;
+                refresh_result_unit(function(){});
+                window.show();
+            }
+
+            function percent_text(A, B) {
+                if(A + B == 0) return '0,00';
+                return ((A*100/(A+B)).toFixed(2)).replace('.', ',');
+            }
+            function thousand_text(x) {
+                return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+            }
+            function set_waiting(container, editable) {
+                var row = $("<tr>");
+                var col = $("<td>", {colspan: editable?9:8});
+                var img = $("<img>",
+                        {src: '{% static 'results/loader.gif' %}',
+                        style: 'display: block; margin-left: auto; margin-right: auto;'});
+                col.append(img);
+                row.append(col);
+                container.html(row);
+            }
+            function set_error(container, message, description, editable) {
+                var row = $("<tr>");
+                var col = $("<td>", {colspan: editable?9:8});
+                var div = $("<div>", {style:'display:block; margin-left: auto;'});
+                var img = $("<img>",
+                        {src: 'http://i3.kym-cdn.com/photos/images/original/000/030/990/i_am_error.jpg',
+                        style: 'vertical-align: middle; display: inline-block;'});
+                var msg = $("<div>", {style: 'vertical-align: middle; display: inline-block; margin-left: 40px;'});
+                var title = $("<h1>").text(message);
+                var desc = $("<p>").text(description);
+                msg.append(title);
+                msg.append(desc);
+                div.append(img);
+                div.append(msg);
+                col.append(div);
+                row.append(col);
+                container.html(row);
+            }
+            function make_row(symbol, name, votes_a, votes_b, color_a, color_b, result_unit, actions, editable, clickable) {
+                var A = votes_a;
+                var B = votes_b;
+                var S = A + B;
+                var N = name;
+
+                var row = $("<tr>");
+                var col0 = $("<td>", {class: 'symbol'}).text(symbol);
+                row.append(col0);
+                var colN = $("<td>", {class: 'name'});
+                if(clickable) {
+                    var aN = null;
+                    if(result_unit.type == 'municipality') {
+                        aN = $("<a>", {href: 'javascript:void(0)'}).text(N).click(function () {
+                            show_municipality(result_unit);
+                        });
+                    } else {
+                        aN = $("<a>", {href: 'javascript:void(0)'}).text(N).click(function () {
+                            show_results_for(result_unit);
+                        });
+                    }
+                    colN.append(aN);
+                } else {
+                    colN.text(N);
+                }
+                row.append(colN);
+                var colS = $("<td>", {class: 'votes-all'}).text(thousand_text(S));
+                row.append(colS);
+                var colAn = $("<td>", {class: 'votes-count'}).text(thousand_text(A));
+                row.append(colAn);
+                var colAp = $("<td>", {class: 'votes-percent'}).text(percent_text(A, B));
+                row.append(colAp);
+                var colV = $("<td>");
+                var divVa = $("<div>", {style: 'height: 10px; display: inline-block; float: left; background-color: ' + color_a + '; width: ' + ((A+B==0)?0:(A*100/(A+B))) + "%;"});
+                var divVb = $("<div>", {style: 'height: 10px; display: inline-block; float: right; background-color: ' + color_b + '; width: ' + ((A+B==0)?0:(B*100/(A+B))) + "%;"});
+                colV.append(divVa);
+                colV.append(divVb);
+                row.append(colV);
+                var colBp = $("<td>", {class: 'votes-percent'}).text(percent_text(B, A));
+                row.append(colBp);
+                var colBn = $("<td>", {class: 'votes-count'}).text(thousand_text(B));
+                row.append(colBn);
+
+                if(actions) {
+                    var colA = $("<td>");
+                    row.append(colA);
+                }
+                return row;
+            }
+            function fill_table(container, summary, data, actions, editable, clickable) {
+                // Data should be an array with columns:
+                // (result_unit, name, candidate_a, candidate_b)
+                var sumA = 0;
+                var sumB = 0;
+                container.empty()
+                for(var i = 0; i < data.rows.length; i++) {
+                    var dr = data.rows[i];
+                    var row = make_row('', dr.name, dr.votes_a, dr.votes_b, data.color.a, data.color.b, dr.result_unit, actions, editable, clickable);
+                    container.append(row);
+                    sumA += dr.votes_a;
+                    sumB += dr.votes_b;
+                }
+                if(summary) {
+                    summary.empty();
+                    var srow = make_row('∑', '', sumA, sumB, data.color.a, data.color.b, '', actions, false, false);
+                    summary.html(srow)
+                }
+            }
+
+            function refresh_result_unit_2(complete_function) {
+                if(!current_result_unit_2) {
+                    complete_function();
+                    return;
+                }
+                var window = $("#wnd-municipality-edit");
+                var wtable = window.find('div.contents table');
+                $.ajax('{% url 'results:query' %}', {
+                    data: current_result_unit_2,
+                    success: function(data) {
+                        fill_edit(wtable, data, authenticated);
+                    },
+                    complete: complete_function
+                });
+            }
+            function show_municipality(result_unit) {
+                var background = $("#wnd-municipality-edit-background");
+                var window = $("#wnd-municipality-edit");
+                background.show();
+                current_result_unit_2 = result_unit;
+                refresh_result_unit_2(function(){});
+                window.show();
+            }
+
+            function submit_changes() {
+                var tbl = $("#wnd-municipality-edit div.contents table");
+                $.ajax('{% url 'results:edit' %}', {
+                    data: {
+                        id: current_result_unit_2.id,
+                        residents: tbl.find('tr td.residents-no input').val(),
+                        entitled: tbl.find('tr td.entitled-no input').val(),
+                        cards: tbl.find('tr td.cards-no input').val(),
+                        votes: tbl.find('tr td.votes-no input').val(),
+                        valid_votes: tbl.find('tr td.valid-votes-no input').val(),
+                        votes_a: tbl.find('tr td.votes-a input').val(),
+                        votes_b: tbl.find('tr td.votes-b input').val(),
+                        update_time: municipality_edit_time
+                    },
+                    type: 'POST',
+                    success: function(data) {
+                        if(data.result == 'ok') {
+                            $("#wnd-municipality-edit div.contents input.close-button").trigger("click");
+                            refresh_data();
+                        } else if(data.result == 'modified-in-the-meantime'){
+                            // got new update_time/user
+                            if(confirm("Dane zostały zmodyfikowane przez " + data.update_user + " o " + data.update_time)) {
+                                municipality_edit_time = data.update_time;
+                                municipality_edit_user = data.update_user;
+                                submit_changes();
+                            } else {
+                                refresh_data();
+                            }
+
+                        } else if(data.result == 'invalid-data') {
+                            alert('Niepoprawne dane - zweryfikuj ich poprawność!');
+                        } else {
+                            alert('Inny błąd!');
+                        }
+                    },
+                    error: function(){alert("Error during saving result!");},
+                });
+            }
+
+            function fill_edit(container, data, editable) {
+                var tbl = container;
+                tbl.find('tr td.name').text(data.name);
+                tbl.find('tr td.residents-no input').val(data.residents_no).prop('readonly', !editable);
+                tbl.find('tr td.entitled-no input').val(data.entitled_no).prop('readonly', !editable);
+                tbl.find('tr td.cards-no input').val(data.cards_no).prop('readonly', !editable);
+                tbl.find('tr td.votes-no input').val(data.votes_no).prop('readonly', !editable);
+                tbl.find('tr td.valid-votes-no input').val(data.valid_votes_no).prop('readonly', !editable);
+                tbl.find('tr td.votes-a input').val(data.votes_a).prop('readonly', !editable);
+                tbl.find('tr td.votes-b input').val(data.votes_b).prop('readonly', !editable);
+
+                tbl.find('tr td.actions input[type=submit]').css('display', editable?'block':'none');
+
+                municipality_edit_time = data.update_time;
+                municipality_edit_user = data.update_user;
+
+                var form = $("#wnd-municipality-edit div.contents form");
+                form.off('submit');
+                form.on('submit', function(event){
+                    event.preventDefault();
+                    if(editable == true) {
+                        submit_changes();
+                    }
+                });
+            }
+
+            function setup_map_province(pid, color, result_unit) {
+                var elt = $("#map-image #"+pid);
+                elt.prop('style', 'fill: ' + color + ';');
+                elt.off('click');
+                elt.click(function(){show_results_for(result_unit)});
+            }
+            function setup_map(data) {
+                for(var i = 0; i < data.rows.length; i++) {
+                    setup_map_province(data.rows[i].id, data.rows[i].color, data.rows[i].result_unit);
+                }
+            }
+
+            function setup_info(data) {
+                var mapdesc = $('#map-desc table');
+                mapdesc.find('tr:nth-child(1) td:nth-child(2)').text(thousand_text(data.residents));
+                mapdesc.find('tr:nth-child(2) td:nth-child(2)').text(thousand_text(data.entitled));
+                mapdesc.find('tr:nth-child(3) td:nth-child(2)').text(thousand_text(data.cards));
+                mapdesc.find('tr:nth-child(4) td:nth-child(2)').text(thousand_text(data.votes));
+                mapdesc.find('tr:nth-child(5) td:nth-child(2)').text(thousand_text(data.valid_votes));
+
+                var cana = $('#candidate-a-summary div');
+                cana.find('div:nth-child(2) div').css(
+                        {background: data.color.a, width: (data.votes_a * 100 / data.votes_s)+"%"});
+                cana.find('div:nth-child(3)').text(percent_text(data.votes_a, data.votes_b));
+                cana.find('div:nth-child(4)').text(thousand_text(data.votes_a));
+
+                var canb = $('#candidate-b-summary div');
+                canb.find('div:nth-child(2) div').css(
+                        {background: data.color.b, width: (data.votes_b * 100 / data.votes_s)+"%"});
+                canb.find('div:nth-child(3)').text(percent_text(data.votes_b, data.votes_a));
+                canb.find('div:nth-child(4)').text(thousand_text(data.votes_b));
+            }
+
+            var refresh_button = $('#refresh-button');
+            function refresh_data() {
+                refresh_button.text('Ładowanie danych').off('click');
+                var province_tbl = $("#province-window div.contents table");
+                var municipality_tbl = $("#municipality-window div.contents table");
+                province_tbl.find('tbody').empty();
+                province_tbl.find('tfoot').empty();
+                municipality_tbl.find('tbody#by-type').empty();
+                municipality_tbl.find('tbody#by-size').empty();
+                set_waiting(province_tbl.find('tbody'), false);
+                set_waiting(municipality_tbl.find('tbody#by-size'), false);
+                var uncompleted = 7;
+                function complete_function() {
+                    uncompleted--;
+                    if(uncompleted == 0) {
+                        refresh_button.text('Odśwież').click(function () {
+                            refresh_data();
+                        });
+                    }
+                }
+                $.ajax('{% url 'results:provinces' %}', {
+                    success: function(data) {
+                        fill_table(province_tbl.find('tbody'), province_tbl.find('tfoot'), data, false, false, true);
+                    },
+                    error: function(xhr, status, error) {
+                        set_error(province_tbl.find('tbody'), 'Query failed with code ' + status, error, false)
+                    },
+                    complete: complete_function
+                });
+                $.ajax('{% url 'results:types' %}', {
+                    success: function(data) {
+                        fill_table(municipality_tbl.find('tbody#by-type'), null, data, false, false, true);
+                    },
+                    error: function(xhr, status, error) {
+                        set_error(municipality_tbl.find('tbody#by-type'), 'Query failed with code ' + status, error, false)
+                    },
+                    complete: complete_function
+                });
+                $.ajax('{% url 'results:sizes' %}', {
+                    success: function(data) {
+                        fill_table(municipality_tbl.find('tbody#by-size'), null, data, false, false, true);
+                    },
+                    error: function(xhr, status, error) {
+                        set_error(municipality_tbl.find('tbody#by-size'), 'Query failed with code ' + status, error, false)
+                    },
+                    complete: complete_function
+                });
+                $.ajax('{% url 'results:map' %}', {
+                    success: function(data) {
+                        setup_map(data);
+                    },
+                    error: function(xhr, status, error) {
+                    },
+                    complete: complete_function
+                });
+                $.ajax('{% url 'results:global' %}', {
+                    success: function(data) {
+                        setup_info(data);
+                    },
+                    error: function(xhr, status, error) {
+                    },
+                    complete: complete_function
+                });
+
+                refresh_result_unit(complete_function);
+                refresh_result_unit_2(complete_function);
+            }
+
+            refresh_data();
+        });
+    </script>
 {% endblock %}
 
 {% block path %}
@@ -17,4 +418,200 @@
     {% include "results/candidates_summary.html" %}
     {% include "results/province_summary.html" %}
     {% include "results/municipality_summary.html" %}
+{% endblock %}
+
+{% block windows %}
+    <div id="wnd-browse-municipalities-background" class="modal-wnd-background"></div>
+    <div id="wnd-browse-municipalities" class="modal-window">
+        <div class="header">
+            <div class="title">Wyniki w gminach</div>
+            <div class="close">&#x274c;</div>
+        </div>
+        <div class="contents">
+            <style scoped>
+                div#wnd-browse-municipalities div.contents table {
+                    border-collapse: collapse;
+                }
+                div#wnd-browse-municipalities div.contents th {
+                    border: 1px dotted dimgray;
+                    padding: 4px 0;
+                }
+                div#wnd-browse-municipalities div.contents th.lp_col {
+                    width: 32px;
+                }
+                div#wnd-browse-municipalities div.contents th.name_col {
+                    width: 196px;
+                }
+                div#wnd-browse-municipalities div.contents th.sum_col {
+                    width: 100px;
+                }
+                div#wnd-browse-municipalities div.contents th.no_col {
+                    width: 96px;
+                }
+                div#wnd-browse-municipalities div.contents th.prop_col {
+                    width: 64px;
+                }
+                div#wnd-browse-municipalities div.contents th.vis_col {
+                    width: 178px;
+                }
+                div#wnd-browse-municipalities div.contents th.action_col {
+                    width: 48px;
+                }
+            </style>
+            <table class="data-table" style="width: auto; display: block; font-size: 12px;">
+                <thead style="background: white;">
+                    <tr>
+                        <th rowspan="3" class="lp_col" style="border-left: none;"></th>
+                        <th rowspan="3" class="name_col">Nazwa</th>
+                        <th rowspan="3" class="sum_col">Liczba głosów<br/>ważnych</th>
+                        <th colspan="2">
+                            {{ province_window.candidates.0.surname|upper }}
+                        </th>
+                        <th rowspan="3" class="vis_col">Liczba głosów<br/>na kandydata / ważnych<br/>[%]</th>
+                        <th colspan="2" style="border-right: none;">
+                            {{ province_window.candidates.1.surname|upper }}
+                        </th>
+                        <th rowspan="3" class="action_col"></th>
+                    </tr>
+                    <tr>
+                        <th colspan="2">głosów na kandydata</th>
+                        <th colspan="2" style="border-right: none;">głosów na kandydata</th>
+                    </tr>
+                    <tr>
+                        <th class="no_col">liczba</th>
+                        <th class="prop_col">%</th>
+                        <th class="prop_col">%</th>
+                        <th class="no_col" style="border-right: none;">liczba</th>
+                    </tr>
+                </thead>
+                <tbody class="data">
+                </tbody>
+                <tfoot class="summary">
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div id="wnd-municipality-edit-background" class="modal-wnd-background"></div>
+    <div id="wnd-municipality-edit" class="modal-window">
+        <div class="header">
+            <div class="title">Edytuj wyniki gminy</div>
+        </div>
+        <div class="contents" style="padding: 8px">
+            <style scoped>
+                div#wnd-municipality-edit div.contents table tr td:nth-child(1) {
+                    width: 200px;
+                    text-align: right;
+                    padding-right: 4px;
+                }
+                div#wnd-municipality-edit div.contents table tr td:nth-child(1) label {
+                    width: 200px;
+                    font-size: 14px;
+                }
+                div#wnd-municipality-edit div.contents table tr td:nth-child(2) {
+                    width: 200px;
+                }
+                div#wnd-municipality-edit div.contents table tr td:nth-child(2) input[type='number'] {
+                    width: 195px;
+                    float: right;
+                }
+
+                div#wnd-municipality-edit div.contents table tr td.actions:nth-child(2) input,button {
+                    float: right;
+                    margin: 2px;
+                }
+            </style>
+            <form>
+                <table>
+                    <tr>
+                        <td style="font-size: 16px; font-weight: bold; padding: 8px 4px 12px 4px;">Gmina:</td>
+                        <td class="name" style="font-size: 16px; font-weight: bold; padding: 8px 4px 12px 4px;">asd</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="residents-no-input">Liczba mieszkańców:</label>
+                        </td>
+                        <td class="residents-no">
+                            <input id="residents-no-input" name="" type="number"/>
+                        </td>
+                        </tr>
+                    <tr>
+                        <td>
+                            <label for="entitled-no-input">Liczba uprawnionych:</label>
+                        </td>
+                        <td class="entitled-no">
+                            <input id="entitled-no-input" type="number"/>
+                        </td>
+                        </tr>
+                    <tr>
+                        <td>
+                            <label for="cards-no-input">Liczba wydanych kart:</label>
+                        </td>
+                        <td class="cards-no">
+                            <input id="cards-no-input" type="number"/>
+                        </td>
+                        </tr>
+                    <tr>
+                        <td>
+                            <label for="votes-no-input">Liczba oddanych głosów:</label>
+                        </td>
+                        <td class="votes-no">
+                            <input id="votes-no-input" type="number"/>
+                        </td>
+                        </tr>
+                    <tr>
+                        <td>
+                            <label for="valid-votes-no-input">Liczba ważnych głosów:</label>
+                        </td>
+                        <td class="valid-votes-no">
+                            <input id="valid-votes-no-input" type="number"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td style="padding-top: 16px;"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="for-A-input">{{ candidates.0.surname }}:</label></td>
+                        <td class="votes-a"><input id="for-A-input" type="number"/></td>
+                    </tr>
+                    <tr>
+                        <td><label for="for-B-input">{{ candidates.1.surname }}:</label></td>
+                        <td class="votes-b"><input id="for-B-input"  type="number"/></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td class="actions" style="padding-top: 16px;">
+                            <input type="submit" value="Submit" style="width: 72px;"/>
+                            <input type="reset" class="close-button" value="Zamknij" style="width: 72px;"/>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        #refresh-button {
+            position:fixed;
+            bottom: 4px;
+            right: 4px;
+            padding: 16px 16px;
+            font-size: 14px;
+            text-align: center;
+            width: 120px;
+
+            background-color: rgba(255,255,255, 0.4);
+            border: 1px solid rgba(0, 0, 0, 0.4);
+            color: rgba(0, 0, 0, 0.6);
+            cursor: default;
+            border-radius: 4px;
+        }
+        #refresh-button:hover {
+            background-color: rgba(255,255,255, 1);
+            border-color: rgba(0, 0, 0, 1);
+            color: rgba(0, 0, 0, 1);
+        }
+    </style>
+    <div id="refresh-button">Odśwież</div>
 {% endblock %}

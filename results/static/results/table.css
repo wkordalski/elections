@@ -1,0 +1,66 @@
+table.data-table .data {
+    background-color: #dddddd;
+}
+
+table.data-table .data tr td.symbol {
+}
+
+table.data-table .data tr td.name {
+}
+
+table.data-table .data tr td.name a {
+    color: black;
+    text-decoration: none;
+}
+
+table.data-table .data tr td.name a:hover {
+    color: black;
+    text-decoration: underline;
+}
+
+table.data-table .data tr td.votes-all {
+    text-align: right;
+}
+
+table.data-table .data tr td.votes-count {
+    text-align: right;
+}
+
+table.data-table .data tr td.votes-percent {
+    text-align: right;
+}
+
+
+table.data-table .summary {
+    background-color: white;
+    border-top: 1px dotted dimgray;
+}
+
+table.data-table .summary tr td.symbol {
+    color: red;
+    font-weight: bold;
+    text-align: center;
+}
+
+table.data-table .summary tr td.name {
+    color: red;
+    font-weight: bold;
+    text-align: center;
+}
+
+table.data-table .summary tr td.votes-all {
+    text-align: right;
+    color: red;
+    font-weight: bold;
+}
+
+table.data-table .summary tr td.votes-count {
+    text-align: right;
+    color: red;
+    font-weight: bold;
+}
+
+table.data-table .summary tr td.votes-percent {
+    text-align: right;
+    color: red;
+}

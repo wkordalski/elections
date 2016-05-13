@@ -2,17 +2,25 @@
 
 <div class="window" id="candidates-summary-window">
     <div class="contents" style="padding: 16px 8px 8px 8px;">
-        {% for cand in summary_window.candidates %}
-            <div>
-                <div style="width: auto; display: block; overflow: hidden; font-size: 16px; font-weight: bold;  margin: 16px 0 12px 0; ">
-                    <div style="width: auto; text-align: center; margin-bottom: 8px;">{{ cand.0.surname|upper }} {{ cand.0.name }}</div>
-                    <div style="float: left; margin: 9px 8px; width: 124px; background-color: white; overflow: hidden; display:block; padding: 2px; -webkit-border-radius: ;-moz-border-radius: ;border-radius: 2px;">
-                        <div style="width: {{ cand.3|stringformat:"f" }}%; background-color: {{ cand.1 }}; display: block; height: 8px;"></div>
-                    </div>
-                    <div style="float: left; margin: 8px 8px;">{{ cand.3|floatformat:2 }}%</div>
-                    <div style="float: right; margin: 8px 8px;">{{ cand.2|intcomma }}</div>
+        <div id="candidate-a-summary">
+            <div style="width: auto; display: block; overflow: hidden; font-size: 16px; font-weight: bold;  margin: 16px 0 12px 0; ">
+                <div style="width: auto; text-align: center; margin-bottom: 8px;">{{ candidates.0.surname|upper }} {{ candidates.0.name }}</div>
+                <div style="float: left; margin: 9px 8px; width: 124px; background-color: white; overflow: hidden; display:block; padding: 2px; -webkit-border-radius: ;-moz-border-radius: ;border-radius: 2px;">
+                    <div style="display: block; height: 8px;"></div>
                 </div>
+                <div style="float: left; margin: 8px 8px;"></div>
+                <div style="float: right; margin: 8px 8px;"></div>
             </div>
-        {% endfor %}
+        </div>
+        <div id="candidate-b-summary">
+            <div style="width: auto; display: block; overflow: hidden; font-size: 16px; font-weight: bold;  margin: 16px 0 12px 0; ">
+                <div style="width: auto; text-align: center; margin-bottom: 8px;">{{ candidates.1.surname|upper }} {{ candidates.1.name }}</div>
+                <div style="float: left; margin: 9px 8px; width: 124px; background-color: white; overflow: hidden; display:block; padding: 2px; -webkit-border-radius: ;-moz-border-radius: ;border-radius: 2px;">
+                    <div style="display: block; height: 8px;"></div>
+                </div>
+                <div style="float: left; margin: 8px 8px;"></div>
+                <div style="float: right; margin: 8px 8px;"></div>
+            </div>
+        </div>
     </div>
 </div>

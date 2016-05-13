@@ -2,7 +2,7 @@
 
 <ul>
     <li>
-        <a href="http://www.prezydent2005.pkw.gov.pl/index.html">
+        <a href="/">
             <img alt="" src="{% static "results/home.png" %}" border="0" style="margin-left: 8px;">
         </a>
     </li>
@@ -35,5 +35,12 @@
     </li>
     <li>
         <a href="http://www.prezydent2005.pkw.gov.pl/PZT/PL/INF/index.html" class="link3">Wykonawca</a>
+    </li>
+    <li style="float: right">
+        {% if request.user.is_authenticated %}
+            Zalogowany: {{ request.user.username }} &nbsp;&nbsp; [ <a href="{% url 'results:logout' %}">wyloguj</a> ]
+        {% else %}
+            Niezalagowany &nbsp;&nbsp; [ <a href="{% url 'results:login' %}">zaloguj</a> ]
+        {% endif %}
     </li>
 </ul>

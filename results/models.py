@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.db import models
 from django.db.models.aggregates import Count
@@ -129,6 +130,10 @@ class Municipality(models.Model):
     cards_no = models.PositiveIntegerField('# wydanych kart', null=True, blank=True)
     votes_no = models.PositiveIntegerField('# oddanych głosów', null=True, blank=True)
     valid_votes_no = models.PositiveIntegerField('# ważnych głosów', null=True, blank=True)
+
+    update_time = models.DateTimeField(null=True, auto_now=True, verbose_name='Czas modyfikacji')
+    update_user = models.ForeignKey(User, on_delete=models.SET_NULL, verbose_name='Modyfikator', null=True)
+
 
     def __str__(self):
         return self.name + ' w ' + self.province.name

@@ -4,18 +4,18 @@
     <div class="title">Porównanie wyników głosowania na kandydatów ze względu na województwo</div>
     <div class="contents" style="padding: 0;">
         <!-- -->
-        <table style="width: auto; display: block; font-size: 12px;">
+        <table class="data-table" style="width: auto; display: block; font-size: 12px;">
             <thead style="background: white;">
                 <tr>
                     <th rowspan="3" class="lp_col" style="border-left: none;"></th>
                     <th rowspan="3" class="name_col">Nazwa</th>
                     <th rowspan="3" class="sum_col">Liczba głosów<br/>ważnych</th>
                     <th colspan="2">
-                        {{ province_window.candidates.0.surname|upper }} {{ province_window.candidates.0.name }}
+                        {{ candidates.0.surname|upper }} {{ candidates.0.name }}
                     </th>
                     <th rowspan="3" class="vis_col">Liczba głosów<br/>na kandydata / ważnych<br/>[%]</th>
                     <th colspan="2" style="border-right: none;">
-                        {{ province_window.candidates.1.surname|upper }} {{ province_window.candidates.1.name }}
+                        {{ candidates.1.surname|upper }} {{ candidates.1.name }}
                     </th>
                 </tr>
                 <tr>
@@ -29,39 +29,9 @@
                     <th class="no_col" style="border-right: none;">liczba</th
                 </tr>
             </thead>
-            <tbody>
-                <!-- TODO -->
-                {% for p in province_window.provinces %}
-                    <tr>
-                        <td></td>
-                        <td style="text-align: left;">{{ p.0 }}</td>
-                        <td style="text-align: right;">{{ p.1|intcomma }}</td>
-                        <td style="text-align: right;">{{ p.2|intcomma }}</td>
-                        <td style="text-align: right;">{{ p.3|floatformat:2 }}</td>
-                        <td style="width: auto; padding: 1px 2px 2px 2px;">
-                            <div style="width: {{ p.3|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.0 }}; display: inline-block; float: left;"></div>
-                            <div style="width: {{ p.5|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.1 }}; display: inline-block; float: left;"></div>
-                        </td>
-                        <td style="text-align: right;">{{ p.5|floatformat:2 }}</td>
-                        <td style="text-align: right;">{{ p.4|intcomma }}</td>
-                    </tr>
-                {% endfor %}
-                
+            <tbody class="data">
             </tbody>
-            <tfoot>
-                <tr>
-                    <td style="text-align: center;">&sum;</td>
-                    <td style="text-align: center;">Polska</td>
-                    <td style="text-align: right;">{{ province_window.poland.0|intcomma }}</td>
-                    <td style="text-align: right;">{{ province_window.poland.1|intcomma }}</td>
-                    <td style="text-align: right;">{{ province_window.poland.2|floatformat:2 }}</td>
-                    <td style="width: auto; padding: 1px 2px 2px 2px;">
-                            <div style="width: {{ province_window.poland.2|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.0 }}; display: inline-block; float: left;"></div>
-                            <div style="width: {{ province_window.poland.4|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.1 }}; display: inline-block; float: left;"></div>
-                        </td>
-                    <td style="text-align: right;">{{ province_window.poland.4|floatformat:2 }}</td>
-                    <td style="text-align: right;">{{ province_window.poland.3|intcomma }}</td>
-                </tr>
+            <tfoot class="summary">
             </tfoot>
         </table>
     </div>

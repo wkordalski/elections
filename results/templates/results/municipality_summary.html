@@ -4,18 +4,18 @@
     <div class="title">Porównanie wyników głosowania na kandydatów w zależności od siedziby komisji obwodowej</div>
     <div class="contents" style="padding: 0;">
         <!-- -->
-        <table style="width: auto; display: block; font-size: 12px;">
+        <table class="data-table" style="width: auto; display: block; font-size: 12px;">
             <thead style="background: white;">
                 <tr>
                     <th rowspan="3" class="lp_col" style="border-left: none;"></th>
                     <th rowspan="3" class="name_col">Nazwa</th>
                     <th rowspan="3" class="sum_col">Liczba głosów<br/>ważnych</th>
                     <th colspan="2">
-                        {{ municipality_window.candidates.0.surname|upper }} {{ municipality_window.candidates.0.name }}
+                        {{ candidates.0.surname|upper }} {{ candidates.0.name }}
                     </th>
                     <th rowspan="3" class="vis_col">Liczba głosów<br/>na kandydata / ważnych<br/>[%]</th>
                     <th colspan="2" style="border-right: none;">
-                        {{ municipality_window.candidates.1.surname|upper }} {{ municipality_window.candidates.1.name }}
+                        {{ candidates.1.surname|upper }} {{ candidates.1.name }}
                     </th>
                 </tr>
                 <tr>
@@ -29,44 +29,16 @@
                     <th class="no_col" style="border-right: none;">liczba</th
                 </tr>
             </thead>
+            <tbody id="by-type" class="data">
+            </tbody>
             <tbody>
-                {% for p in municipality_window.municipality_types %}
-                    <tr>
-                        <td></td>
-                        <td style="text-align: left;">{{ p.0 }}</td>
-                        <td style="text-align: right;">{{ p.1|intcomma }}</td>
-                        <td style="text-align: right;">{{ p.2|intcomma }}</td>
-                        <td style="text-align: right;">{{ p.3|floatformat:2 }}</td>
-                        <td style="width: auto; padding: 1px 2px 2px 2px;">
-                            <div style="width: {{ p.3|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.0 }}; display: inline-block; float: left;"></div>
-                            <div style="width: {{ p.5|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.1 }}; display: inline-block; float: left;"></div>
-                        </td>
-                        <td style="text-align: right;">{{ p.5|floatformat:2 }}</td>
-                        <td style="text-align: right;">{{ p.4|intcomma }}</td>
-                    </tr>
-                {% endfor %}
                 <tr style="border-top: 1px dotted darkgray; border-bottom: 1px dotted darkgray; background-color: lightgray;">
                     <td colspan="8" style="padding: 7px 16px 4px 16px; color: #404040;">
                         Porównanie wyników głosowania na kandydatów w zależności od liczby mieszkańców gminy
                     </td>
                 </tr>
-                <!-- TODO -->
-                {% for p in municipality_window.municipality_sizes %}
-                    <tr>
-                        <td></td>
-                        <td style="text-align: left;">{{ p.0 }}</td>
-                        <td style="text-align: right;">{{ p.1|intcomma }}</td>
-                        <td style="text-align: right;">{{ p.2|intcomma }}</td>
-                        <td style="text-align: right;">{{ p.3|floatformat:2 }}</td>
-                        <td style="width: auto; padding: 1px 2px 2px 2px;">
-                            <div style="width: {{ p.3|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.0 }}; display: inline-block; float: left;"></div>
-                            <div style="width: {{ p.5|stringformat:"f" }}%; height: 10px; background-color: {{ province_window.colors.1 }}; display: inline-block; float: left;"></div>
-                        </td>
-                        <td style="text-align: right;">{{ p.5|floatformat:2 }}</td>
-                        <td style="text-align: right;">{{ p.4|intcomma }}</td>
-                    </tr>
-                {% endfor %}
-
+            </tbody>
+            <tbody id="by-size" class="data">
             </tbody>
         </table>
     </div>

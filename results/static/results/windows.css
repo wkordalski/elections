@@ -1,0 +1,80 @@
+body div.modal-wnd-background {
+    display: none;
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(77, 77, 77, 0.5);
+}
+
+body div.modal-window {
+    display: none;
+    position: fixed;
+    left: 50%;
+    background-color: white;
+    border: 1px solid gray;
+    border-radius: 8px 8px 0 0 ;
+    overflow: hidden;
+}
+
+body div.modal-window div.header {
+    overflow: hidden;
+    background-color: #bbbbbb;
+}
+
+body div.modal-window div.header div.title {
+    float: left;
+    color: #222222;
+    font-size: 13px;
+    padding: 6px 16px 4px 16px;
+}
+
+body div.modal-window div.header div.close {
+    float: right;
+    cursor: default;
+    background-color: #aa2222;
+    color: white;
+    border-radius: 7px;
+    font-size: 12px;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    text-align: center;
+    margin: 4px 4px 4px 4px;
+}
+
+body div.modal-window div.header div.close:hover {
+    background-color: red;
+}
+
+body div.modal-window div.contents {
+    background: white;
+}
+
+
+body div#wnd-browse-municipalities.modal-window {
+    top: 50%;
+    width: 900px;
+    height: 400px;
+    margin-left: -450px;
+    margin-top: -200px;
+}
+
+body div#wnd-browse-municipalities.modal-window div.contents {
+    height: 376px;
+    overflow-y: scroll;
+}
+
+
+body div#wnd-municipality-edit.modal-window {
+    top: 50%;
+    width: 400px;
+    height: 320px;
+    margin-left: -200px;
+    margin-top: -150px;
+}
+
+body div#wnd-municipality-edit.modal-window div.contents {
+    height: 296px;
+}

@@ -8,6 +8,7 @@
     <link rel="stylesheet" type="text/css" href="{% static "results/base.css" %}" />
     <link rel="stylesheet" type="text/css" href="{% static "results/base_layout.css" %}" />
     <link rel="stylesheet" type="text/css" href="{% static "results/base_layout_narrow.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "results/windows.css" %}" />
     {% block meta %}{% endblock %}
 </head>
 <body>
@@ -39,5 +40,9 @@
         <a href="http://students.mimuw.edu.pl/~wk359805/" target="_balnk" style="font-weight: bold">Wojciech Kordalski</a>.
         Wszystkie Prawa Zastrzeżone.
     </footer>
+
+    <div id="modal-wnd-background"></div>
+    {% block windows %}
+    {% endblock %}
 </body>
 </html>
