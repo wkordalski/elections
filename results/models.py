@@ -1,7 +1,9 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.db import models
-from django.db.models.aggregates import Count
+from django.db.models.aggregates import Count, Sum
+from django.db.models.functions import Coalesce
+from django.db.models.query_utils import Q
 from djchoices import DjangoChoices, ChoiceItem
 
 
@@ -29,6 +31,10 @@ class Candidate(models.Model):
     name = models.CharField('Imię', max_length=64)
     surname = models.CharField('Nazwisko', max_length=64)
 
+    @property
+    def voting_results(self):
+        return self.results.aggregate(sum=Coalesce(Sum('votes'), 0))['sum']
+
 
 class Province(models.Model):
     class Meta:
@@ -37,6 +43,14 @@ class Province(models.Model):
 
     name = models.CharField('Nazwa', max_length=256)
     map_id = models.CharField('Identyfikator na mapie', max_length=8, null=True, blank=True)
+
+    @property
+    def voting_results(self):
+        return {c.id: c.results.filter(municipality__province__id=self.id).aggregate(sum=Coalesce(Sum('votes'), 0))['sum'] for c in Candidate.objects.all()}
+
+    @property
+    def result_unit(self):
+        return {'type': 'province', 'id': self.id}
 
     def residents_no(self):
         return sum([m.residents_no if m.residents_no else 0 for m in self.municipalities.all()])
@@ -134,9 +148,16 @@ class Municipality(models.Model):
     update_time = models.DateTimeField(null=True, auto_now=True, verbose_name='Czas modyfikacji')
     update_user = models.ForeignKey(User, on_delete=models.SET_NULL, verbose_name='Modyfikator', null=True)
 
-
     def __str__(self):
         return self.name + ' w ' + self.province.name
+
+    @property
+    def voting_results(self):
+        return {r.candidate.id: r.votes for r in self.results.all()}
+
+    @property
+    def update_token(self):
+        return str(self.update_time)
 
 
 class ElectionResult(models.Model):

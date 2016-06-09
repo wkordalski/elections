@@ -15,6 +15,62 @@
         {% endif %}
     </script>
     <script type="text/javascript">
+        color_a = '#0260d4';
+        color_b = '#ff8609';
+
+        color_ukwn = 'lightgray';
+
+        color_scale = [
+                '#ce6800',  //  [0, 5)      // 0
+                '#e77900',
+                '#ff8609',
+                '#fe9020',  //  [15, 20)    // 3
+                '#ff9d39',
+                '#ffa951',
+                '#ffb554',  //  [30, 35)    // 6
+                '#ffc15e',
+                '#ffcd70',
+                '#ffdb70',  //  [45, 50)    // 9
+                '#BEFFA7',  //  [50, 50]    // 10
+                '#cce3ff',  //  (50, 55]    // 11
+                '#b4d5fd',
+                '#99c7ff',
+                '#7db7fe',  //  (65, 70]    // 14
+                '#5aa4fe',
+                '#3590ff',
+                '#0273fd',  //  (80, 85]    // 17
+                '#0260d4',
+                '#014aa3',
+                '#003575'   // (95, 100]    // 20
+        ]
+
+        function get_color(A, B) {
+            if(A == 0 && B == 0) return color_ukwn;
+            if(A == B) return color_scale[10];
+
+            var x = A * 100 / (A + B)
+
+            if(A < B) {
+                return color_scale[Math.floor(x / 5)];
+            } else {
+                return color_scale[20 - Math.floor((100-x)/5)];
+            }
+        }
+
+        function keys(obj) {
+            var keys = [];
+
+            for(var key in obj)
+            {
+                if(obj.hasOwnProperty(key))
+                {
+                    keys.push(key);
+                }
+            }
+
+            return keys;
+        }
+
         $(document).ready(function($){
             // This function gets cookie with a given name
             function getCookie(name) {
@@ -60,6 +116,7 @@
             var current_result_unit_2 = null;
             var municipality_edit_time = null;
             var municipality_edit_user = null;
+            var municipality_edit_token = null;
             {
                 var windowb = $("#wnd-browse-municipalities");
                 var wtableb = windowb.find('div.contents table');
@@ -81,6 +138,7 @@
                     current_result_unit_2 = null;
                     municipality_edit_time = null;
                     municipality_edit_user = null;
+                    municipality_edit_token = null;
                 });
             }
 
@@ -92,10 +150,10 @@
                 var window = $("#wnd-browse-municipalities");
                 var wtable = window.find('div.contents table');
                 set_waiting(wtable.find('tbody'), true);
-                $.ajax('{% url 'results:query' %}', {
+                $.ajax('{% url 'results:query-list' %}', {
                     data: current_result_unit,
                     success: function(data) {
-                        fill_table(wtable.find('tbody'), wtable.find('tfoot'), data, true, false, true);
+                        fill_table_municipality(wtable.find('tbody'), wtable.find('tfoot'), data, true, false, true);
                     },
                     complete: complete_function
                 })
@@ -198,17 +256,48 @@
                 // (result_unit, name, candidate_a, candidate_b)
                 var sumA = 0;
                 var sumB = 0;
+                if(data.results.length > 0) {
+                    var cands = keys(data.results[0].voting_results).sort()
+                    var candA = cands[0]
+                    var candB = cands[1]
+                }
                 container.empty()
-                for(var i = 0; i < data.rows.length; i++) {
-                    var dr = data.rows[i];
-                    var row = make_row('', dr.name, dr.votes_a, dr.votes_b, data.color.a, data.color.b, dr.result_unit, actions, editable, clickable);
+                for(var i = 0; i < data.results.length; i++) {
+                    var dr = data.results[i];
+                    var row = make_row('', dr.name, dr.voting_results[candA], dr.voting_results[candB], color_a, color_b, dr.result_unit, actions, editable, clickable);
                     container.append(row);
-                    sumA += dr.votes_a;
-                    sumB += dr.votes_b;
+                    sumA += dr.voting_results[candA];
+                    sumB += dr.voting_results[candB];
                 }
                 if(summary) {
                     summary.empty();
-                    var srow = make_row('∑', '', sumA, sumB, data.color.a, data.color.b, '', actions, false, false);
+                    var srow = make_row('∑', '', sumA, sumB, color_a, color_b, '', actions, false, false);
+                    summary.html(srow)
+                }
+            }
+
+            function fill_table_municipality(container, summary, data, actions, editable, clickable) {
+                // Data should be an array with columns:
+                // (result_unit, name, candidate_a, candidate_b)
+                var sumA = 0;
+                var sumB = 0;
+                console.log(data);
+                if(data.results.length > 0) {
+                    var cands = keys(data.results[0].voting_results).sort()
+                    var candA = cands[0]
+                    var candB = cands[1]
+                }
+                container.empty()
+                for(var i = 0; i < data.results.length; i++) {
+                    var dr = data.results[i];
+                    var row = make_row('', dr.name, dr.voting_results[candA], dr.voting_results[candB], color_a, color_b, {type: 'municipality', id: dr.id}, actions, editable, clickable);
+                    container.append(row);
+                    sumA += dr.voting_results[candA];
+                    sumB += dr.voting_results[candB];
+                }
+                if(summary) {
+                    summary.empty();
+                    var srow = make_row('∑', '', sumA, sumB, color_a, color_b, '', actions, false, false);
                     summary.html(srow)
                 }
             }
@@ -220,7 +309,7 @@
                 }
                 var window = $("#wnd-municipality-edit");
                 var wtable = window.find('div.contents table');
-                $.ajax('{% url 'results:query' %}', {
+                $.ajax('{% url 'results:query-list' %}', {
                     data: current_result_unit_2,
                     success: function(data) {
                         fill_edit(wtable, data, authenticated);
@@ -239,18 +328,21 @@
 
             function submit_changes() {
                 var tbl = $("#wnd-municipality-edit div.contents table");
+                console.log(tbl.find('tr td.residents-no input'));
+                var dta = {
+                    id: current_result_unit_2.id,
+                    residents: tbl.find('tr td.residents-no input').val(),
+                    entitled: tbl.find('tr td.entitled-no input').val(),
+                    cards: tbl.find('tr td.cards-no input').val(),
+                    votes: tbl.find('tr td.votes-no input').val(),
+                    valid_votes: tbl.find('tr td.valid-votes-no input').val(),
+                    votes_a: tbl.find('tr td.votes-a input').val(),
+                    votes_b: tbl.find('tr td.votes-b input').val(),
+                    update_token: municipality_edit_token
+                }
+                console.log(dta);
                 $.ajax('{% url 'results:edit' %}', {
-                    data: {
-                        id: current_result_unit_2.id,
-                        residents: tbl.find('tr td.residents-no input').val(),
-                        entitled: tbl.find('tr td.entitled-no input').val(),
-                        cards: tbl.find('tr td.cards-no input').val(),
-                        votes: tbl.find('tr td.votes-no input').val(),
-                        valid_votes: tbl.find('tr td.valid-votes-no input').val(),
-                        votes_a: tbl.find('tr td.votes-a input').val(),
-                        votes_b: tbl.find('tr td.votes-b input').val(),
-                        update_time: municipality_edit_time
-                    },
+                    data: dta,
                     type: 'POST',
                     success: function(data) {
                         if(data.result == 'ok') {
@@ -261,6 +353,7 @@
                             if(confirm("Dane zostały zmodyfikowane przez " + data.update_user + " o " + data.update_time)) {
                                 municipality_edit_time = data.update_time;
                                 municipality_edit_user = data.update_user;
+                                municipality_edit_token = data.update_token;
                                 submit_changes();
                             } else {
                                 refresh_data();
@@ -277,6 +370,15 @@
             }
 
             function fill_edit(container, data, editable) {
+                console.log(data);
+                if(data.results.length != 1) {
+                    alert("Wrong data!");
+                    return;
+                }
+                var data = data.results[0]
+                var cands = keys(data.voting_results).sort()
+                var candA = cands[0]
+                var candB = cands[1]
                 var tbl = container;
                 tbl.find('tr td.name').text(data.name);
                 tbl.find('tr td.residents-no input').val(data.residents_no).prop('readonly', !editable);
@@ -284,13 +386,14 @@
                 tbl.find('tr td.cards-no input').val(data.cards_no).prop('readonly', !editable);
                 tbl.find('tr td.votes-no input').val(data.votes_no).prop('readonly', !editable);
                 tbl.find('tr td.valid-votes-no input').val(data.valid_votes_no).prop('readonly', !editable);
-                tbl.find('tr td.votes-a input').val(data.votes_a).prop('readonly', !editable);
-                tbl.find('tr td.votes-b input').val(data.votes_b).prop('readonly', !editable);
+                tbl.find('tr td.votes-a input').val(data.voting_results[candA]).prop('readonly', !editable);
+                tbl.find('tr td.votes-b input').val(data.voting_results[candB]).prop('readonly', !editable);
 
                 tbl.find('tr td.actions input[type=submit]').css('display', editable?'block':'none');
 
                 municipality_edit_time = data.update_time;
                 municipality_edit_user = data.update_user;
+                municipality_edit_token = data.update_token;
 
                 var form = $("#wnd-municipality-edit div.contents form");
                 form.off('submit');
@@ -309,8 +412,15 @@
                 elt.click(function(){show_results_for(result_unit)});
             }
             function setup_map(data) {
-                for(var i = 0; i < data.rows.length; i++) {
-                    setup_map_province(data.rows[i].id, data.rows[i].color, data.rows[i].result_unit);
+                if(data.results.length == 0) return;
+
+                var cands = keys(data.results[0].voting_results).sort();
+                var candA = cands[0];
+                var candB = cands[1];
+                for(var i = 0; i < data.results.length; i++) {
+                    var dr = data.results[i];
+                    setup_map_province(dr.map_id, get_color(dr.voting_results[candA], dr.voting_results[candB]),
+                            data.results[i].result_unit);
                 }
             }
 
@@ -321,18 +431,38 @@
                 mapdesc.find('tr:nth-child(3) td:nth-child(2)').text(thousand_text(data.cards));
                 mapdesc.find('tr:nth-child(4) td:nth-child(2)').text(thousand_text(data.votes));
                 mapdesc.find('tr:nth-child(5) td:nth-child(2)').text(thousand_text(data.valid_votes));
+            }
 
-                var cana = $('#candidate-a-summary div');
-                cana.find('div:nth-child(2) div').css(
-                        {background: data.color.a, width: (data.votes_a * 100 / data.votes_s)+"%"});
-                cana.find('div:nth-child(3)').text(percent_text(data.votes_a, data.votes_b));
-                cana.find('div:nth-child(4)').text(thousand_text(data.votes_a));
+            function setup_candidates(data) {
+                var candidates = {};
 
-                var canb = $('#candidate-b-summary div');
-                canb.find('div:nth-child(2) div').css(
-                        {background: data.color.b, width: (data.votes_b * 100 / data.votes_s)+"%"});
-                canb.find('div:nth-child(3)').text(percent_text(data.votes_b, data.votes_a));
-                canb.find('div:nth-child(4)').text(thousand_text(data.votes_b));
+                for(var i = 0; i < data.results.length; i++) {
+                    candidates[data.results[i].id] = data.results[i];
+                }
+
+                var cands = keys(candidates).sort();
+                var cand_a = candidates[cands[0]]
+                var cand_b = candidates[cands[1]]
+                var votes_s = cand_a.voting_results + cand_b.voting_results
+
+                var cana = $('#candidate-a-summary > div');
+                cana.children('div:nth-child(1)').text(cand_a.surname.toUpperCase() + ' ' + cand_a.name);
+                cana.children('div:nth-child(2)').children('div').css(
+                        {background: color_a, width: (cand_a.voting_results * 100 / votes_s)+"%"});
+                cana.children('div:nth-child(3)').text(percent_text(cand_a.voting_results, cand_b.voting_results));
+                cana.children('div:nth-child(4)').text(thousand_text(cand_a.voting_results));
+
+                var canb = $('#candidate-b-summary > div');
+                canb.children('div:nth-child(1)').text(cand_b.surname.toUpperCase() + ' ' + cand_b.name);
+                canb.children('div:nth-child(2)').children('div').css(
+                        {background: color_b, width: (cand_b.voting_results * 100 / votes_s)+"%"});
+                canb.children('div:nth-child(3)').text(percent_text(cand_b.voting_results, cand_a.voting_results));
+                canb.children('div:nth-child(4)').text(thousand_text(cand_b.voting_results));
+
+                $('.name-candidate-a').text(cand_a.surname.toUpperCase() + ' ' + cand_a.name);
+                $('.name-candidate-b').text(cand_b.surname.toUpperCase() + ' ' + cand_b.name);
+                $('.surname-candidate-a').text(cand_a.surname);
+                $('.surname-candidate-b').text(cand_b.surname);
             }
 
             var refresh_button = $('#refresh-button');
@@ -346,7 +476,7 @@
                 municipality_tbl.find('tbody#by-size').empty();
                 set_waiting(province_tbl.find('tbody'), false);
                 set_waiting(municipality_tbl.find('tbody#by-size'), false);
-                var uncompleted = 7;
+                var uncompleted = 8;
                 function complete_function() {
                     uncompleted--;
                     if(uncompleted == 0) {
@@ -355,16 +485,26 @@
                         });
                     }
                 }
-                $.ajax('{% url 'results:provinces' %}', {
+                $.ajax('{% url 'results:candidate-list' %}', {
+                    success: function(data) {
+                        setup_candidates(data);
+                    },
+                    error: function() {
+                        alert('Error downloading candidates.');
+                    },
+                    complete: complete_function
+                });
+                $.ajax('{% url 'results:province-list' %}', {
                     success: function(data) {
                         fill_table(province_tbl.find('tbody'), province_tbl.find('tfoot'), data, false, false, true);
+                        setup_map(data);
                     },
                     error: function(xhr, status, error) {
                         set_error(province_tbl.find('tbody'), 'Query failed with code ' + status, error, false)
                     },
                     complete: complete_function
                 });
-                $.ajax('{% url 'results:types' %}', {
+                $.ajax('{% url 'results:municipality-types' %}', {
                     success: function(data) {
                         fill_table(municipality_tbl.find('tbody#by-type'), null, data, false, false, true);
                     },
@@ -373,20 +513,12 @@
                     },
                     complete: complete_function
                 });
-                $.ajax('{% url 'results:sizes' %}', {
+                $.ajax('{% url 'results:municipality-sizes' %}', {
                     success: function(data) {
                         fill_table(municipality_tbl.find('tbody#by-size'), null, data, false, false, true);
                     },
                     error: function(xhr, status, error) {
                         set_error(municipality_tbl.find('tbody#by-size'), 'Query failed with code ' + status, error, false)
-                    },
-                    complete: complete_function
-                });
-                $.ajax('{% url 'results:map' %}', {
-                    success: function(data) {
-                        setup_map(data);
-                    },
-                    error: function(xhr, status, error) {
                     },
                     complete: complete_function
                 });
@@ -464,12 +596,10 @@
                         <th rowspan="3" class="lp_col" style="border-left: none;"></th>
                         <th rowspan="3" class="name_col">Nazwa</th>
                         <th rowspan="3" class="sum_col">Liczba głosów<br/>ważnych</th>
-                        <th colspan="2">
-                            {{ province_window.candidates.0.surname|upper }}
+                        <th colspan="2" class="name-candidate-a">
                         </th>
                         <th rowspan="3" class="vis_col">Liczba głosów<br/>na kandydata / ważnych<br/>[%]</th>
-                        <th colspan="2" style="border-right: none;">
-                            {{ province_window.candidates.1.surname|upper }}
+                        <th colspan="2" style="border-right: none;" class="name-candidate-b">
                         </th>
                         <th rowspan="3" class="action_col"></th>
                     </tr>
@@ -572,11 +702,11 @@
                         <td style="padding-top: 16px;"></td>
                     </tr>
                     <tr>
-                        <td><label for="for-A-input">{{ candidates.0.surname }}:</label></td>
+                        <td><label for="for-A-input" class="surname-candidate-a"></label>:</td>
                         <td class="votes-a"><input id="for-A-input" type="number"/></td>
                     </tr>
                     <tr>
-                        <td><label for="for-B-input">{{ candidates.1.surname }}:</label></td>
+                        <td><label for="for-B-input" class="surname-candidate-b"></label>:</td>
                         <td class="votes-b"><input id="for-B-input"  type="number"/></td>
                     </tr>
                     <tr>

@@ -6,7 +6,13 @@ from django.db.models.query_utils import Q
 from django.http.response import JsonResponse
 from django.shortcuts import render
 
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from results.models import Municipality, Province, Candidate, ElectionResult
+from results.serializers import ProvinceSerializer, MunicipalitySerializer, CandidateSerializer, \
+    ElectionResultsSerializer
 
 
 class VotingStatistics:
@@ -441,10 +447,7 @@ def edit_results(request):
         if not m:
             raise SuspiciousOperation("Municipality do not exist!")
 
-        def compare_update_times(a, b):
-            return str(a) == str(b)
-
-        if not compare_update_times(m.update_time, data['update_time']):
+        if m.update_token != data['update_token']:
             return JsonResponse({'result': 'modified-in-the-meantime',
                                  'update_user': m.update_user.username if m.update_user else 'unknown',
                                  'update_time': str(m.update_time)
@@ -452,7 +455,7 @@ def edit_results(request):
         else:
             def iot(x):
                 if x == '': return None
-                else: int(x)
+                else: return int(x)
 
             def ism(a, b):
                 r = 0
@@ -493,3 +496,139 @@ def edit_results(request):
             return JsonResponse({'result': 'ok'})
     else:
         raise SuspiciousOperation("Should post!")
+
+
+class ProviceViewSet(viewsets.ModelViewSet):
+    queryset = Province.objects.all()
+    serializer_class = ProvinceSerializer
+
+
+class MunicipalityViewSet(viewsets.ModelViewSet):
+    queryset = Municipality.objects.all()
+    serializer_class = MunicipalitySerializer
+
+
+class CandidateViewSet(viewsets.ModelViewSet):
+    queryset = Candidate.objects.all()
+    serializer_class = CandidateSerializer
+
+
+class ElectionResultsViewSet(viewsets.ModelViewSet):
+    queryset = ElectionResult.objects.all()
+    serializer_class = ElectionResultsSerializer
+
+
+class MunicipalitySizesView(APIView):
+    def get(self, request, *args, **kwargs):
+        ctx = dict()
+
+        possible_sizes = [
+            (None, 5000),
+            (5001, 10000),
+            (10001, 20000),
+            (20001, 50000),
+            (50001, 100000),
+            (100001, 200000),
+            (200001, 500000),
+            (500001, None)
+        ]
+
+        def make_query(r):
+            a, b = r
+            if a:
+                ar = Q(municipality__residents_no__gt=a-1)
+            if b:
+                br = Q(municipality__residents_no__lt=b+1)
+
+            if a and b:
+                return ar & br
+            elif a:
+                return ar
+            elif b:
+                return br
+            else:
+                return Q()
+
+        def make_name(r):
+            return (
+                (('od {} '.format(intcomma(r[0]))) if r[0] else '') + ('do {}'.format(intcomma(r[1])) if r[1] else '')
+            ).strip()
+
+
+        ctx['results'] = [
+            {'name': make_name(r),
+             'voting_results': {c.id: c.results.filter(make_query(r)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum']
+              for c in Candidate.objects.all()},
+             'result_unit': {'type': 'size', 'from': r[0], 'to': r[1]}
+            }
+            for r in possible_sizes
+        ]
+        return Response(ctx, status=status.HTTP_200_OK)
+
+
+class MunicipalityTypesView(APIView):
+    def get(self, request, *args, **kwargs):
+        ctx = dict()
+
+        possible_types = [
+            Municipality.Type.City,
+            Municipality.Type.Village,
+            Municipality.Type.Ship,
+            Municipality.Type.Abroad
+        ]
+
+        def make_name(r):
+            return Municipality.Type.values[r]
+
+
+        ctx['results'] = [
+            {'name': make_name(r),
+             'voting_results': {c.id: c.results.filter(Q(municipality__type=r)).aggregate(sum=Coalesce(Sum('votes'), 0))['sum']
+              for c in Candidate.objects.all()},
+             'result_unit': {'type': 'type', 'id': r}
+            }
+            for r in possible_types
+        ]
+        return Response(ctx, status=status.HTTP_200_OK)
+
+
+class MunicipalityQueryView(viewsets.ViewSet):
+    def list(self, request):
+        what = request.GET
+        if 'type' not in what:
+            return self.query_helper(Q())
+        if what['type'] == 'province':
+            pid = what['id']
+            return self.query_helper(Q(province__id=pid))
+        elif what['type'] == 'type':
+            tid = what['id']
+            return self.query_helper(Q(type=tid))
+        elif what['type'] == 'size':
+            rng = (int(what['from']) if what['from'] else None, int(what['to']) if what['to'] else None)
+
+            def make_query(r):
+                a, b = r
+                if a:
+                    ar = Q(residents_no__gt=a-1)
+                if b:
+                    br = Q(residents_no__lt=b+1)
+
+                if a and b:
+                    return ar & br
+                elif a:
+                    return ar
+                elif b:
+                    return br
+                else:
+                    return Q()
+            return self.query_helper(make_query(rng))
+        elif what['type'] == 'municipality':
+            mid = what['id']
+            return self.query_helper(Q(id=mid))
+        else:
+            raise SuspiciousOperation('Wrong query')
+
+    def query_helper(self, q):
+        objects = Municipality.objects.filter(q)
+        serializer = MunicipalitySerializer(objects, many=True)
+        return Response({'results': serializer.data})
