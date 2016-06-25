@@ -466,7 +466,7 @@
             }
 
             var refresh_button = $('#refresh-button');
-            function refresh_data() {
+            function refresh_data(download = true) {
                 refresh_button.text('Ładowanie danych').off('click');
                 var province_tbl = $("#province-window div.contents table");
                 var municipality_tbl = $("#municipality-window div.contents table");
@@ -476,7 +476,7 @@
                 municipality_tbl.find('tbody#by-size').empty();
                 set_waiting(province_tbl.find('tbody'), false);
                 set_waiting(municipality_tbl.find('tbody#by-size'), false);
-                var uncompleted = 8;
+                var uncompleted = 7;
                 function complete_function() {
                     uncompleted--;
                     if(uncompleted == 0) {
@@ -485,9 +485,37 @@
                         });
                     }
                 }
+                // FILL WITH OLD DATA
+                if('candidates' in localStorage) {
+                    setup_candidates(JSON.parse(localStorage.getItem('candidates')));
+                }
+                if('provinces' in localStorage) {
+                    var data = JSON.parse(localStorage.getItem('provinces'));
+                    fill_table(province_tbl.find('tbody'), province_tbl.find('tfoot'), data, false, false, true);
+                    setup_map(data);
+                }
+                if('municipality-types' in localStorage) {
+                    fill_table(municipality_tbl.find('tbody#by-type'), null,
+                            JSON.parse(localStorage.getItem('municipality-types')), false, false, true);
+                }
+                if('municipality-sizes' in localStorage) {
+                    fill_table(municipality_tbl.find('tbody#by-size'), null,
+                            JSON.parse(localStorage.getItem('municipality-sizes')), false, false, true);
+                }
+                if('global-info' in localStorage) {
+                    setup_info(JSON.parse(localStorage.getItem('global-info')));
+                }
+
+                if(download == false)
+                {
+                    for(var i = 0; i < 7; i++) complete_function();
+                    return;
+                }
+
                 $.ajax('{% url 'results:candidate-list' %}', {
                     success: function(data) {
                         setup_candidates(data);
+                        localStorage.setItem('candidates', JSON.stringify(data));
                     },
                     error: function() {
                         alert('Error downloading candidates.');
@@ -498,6 +526,7 @@
                     success: function(data) {
                         fill_table(province_tbl.find('tbody'), province_tbl.find('tfoot'), data, false, false, true);
                         setup_map(data);
+                        localStorage.setItem('provinces', JSON.stringify(data));
                     },
                     error: function(xhr, status, error) {
                         set_error(province_tbl.find('tbody'), 'Query failed with code ' + status, error, false)
@@ -507,6 +536,7 @@
                 $.ajax('{% url 'results:municipality-types' %}', {
                     success: function(data) {
                         fill_table(municipality_tbl.find('tbody#by-type'), null, data, false, false, true);
+                        localStorage.setItem('municipality-types', JSON.stringify(data));
                     },
                     error: function(xhr, status, error) {
                         set_error(municipality_tbl.find('tbody#by-type'), 'Query failed with code ' + status, error, false)
@@ -516,6 +546,7 @@
                 $.ajax('{% url 'results:municipality-sizes' %}', {
                     success: function(data) {
                         fill_table(municipality_tbl.find('tbody#by-size'), null, data, false, false, true);
+                        localStorage.setItem('municipality-sizes', JSON.stringify(data));
                     },
                     error: function(xhr, status, error) {
                         set_error(municipality_tbl.find('tbody#by-size'), 'Query failed with code ' + status, error, false)
@@ -525,6 +556,7 @@
                 $.ajax('{% url 'results:global' %}', {
                     success: function(data) {
                         setup_info(data);
+                        localStorage.setItem('global-info', JSON.stringify(data));
                     },
                     error: function(xhr, status, error) {
                     },
@@ -535,7 +567,7 @@
                 refresh_result_unit_2(complete_function);
             }
 
-            refresh_data();
+            refresh_data(false);
         });
     </script>
 {% endblock %}
